@@ -14,16 +14,199 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      matches: {
+        Row: {
+          category: Database["public"]["Enums"]["player_category"]
+          court: string
+          created_at: string
+          id: string
+          player_a_id: string
+          player_b_id: string
+          scheduled_at: string
+          score_a: number
+          score_b: number
+          status: Database["public"]["Enums"]["match_status"]
+          updated_at: string
+          winner_id: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["player_category"]
+          court: string
+          created_at?: string
+          id?: string
+          player_a_id: string
+          player_b_id: string
+          scheduled_at: string
+          score_a?: number
+          score_b?: number
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["player_category"]
+          court?: string
+          created_at?: string
+          id?: string
+          player_a_id?: string
+          player_b_id?: string
+          scheduled_at?: string
+          score_a?: number
+          score_b?: number
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_player_a_id_fkey"
+            columns: ["player_a_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_player_b_id_fkey"
+            columns: ["player_b_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          age: number
+          category: Database["public"]["Enums"]["player_category"]
+          created_at: string
+          designation: string
+          email: string | null
+          employee_number: string
+          gender: Database["public"]["Enums"]["player_gender"]
+          id: string
+          location: string
+          name: string
+          phone: string
+          photo_url: string | null
+          registered_at: string
+          status: Database["public"]["Enums"]["player_status"]
+          team: string | null
+          updated_at: string
+        }
+        Insert: {
+          age: number
+          category: Database["public"]["Enums"]["player_category"]
+          created_at?: string
+          designation: string
+          email?: string | null
+          employee_number: string
+          gender: Database["public"]["Enums"]["player_gender"]
+          id?: string
+          location: string
+          name: string
+          phone: string
+          photo_url?: string | null
+          registered_at?: string
+          status?: Database["public"]["Enums"]["player_status"]
+          team?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age?: number
+          category?: Database["public"]["Enums"]["player_category"]
+          created_at?: string
+          designation?: string
+          email?: string | null
+          employee_number?: string
+          gender?: Database["public"]["Enums"]["player_gender"]
+          id?: string
+          location?: string
+          name?: string
+          phone?: string
+          photo_url?: string | null
+          registered_at?: string
+          status?: Database["public"]["Enums"]["player_status"]
+          team?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      match_status: "UPCOMING" | "LIVE" | "COMPLETED"
+      player_category:
+        | "Mens Singles"
+        | "Womens Singles"
+        | "Mens Doubles"
+        | "Womens Doubles"
+        | "Mixed Doubles"
+      player_gender: "Male" | "Female" | "Other"
+      player_status: "PENDING" | "APPROVED" | "REJECTED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +333,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      match_status: ["UPCOMING", "LIVE", "COMPLETED"],
+      player_category: [
+        "Mens Singles",
+        "Womens Singles",
+        "Mens Doubles",
+        "Womens Doubles",
+        "Mixed Doubles",
+      ],
+      player_gender: ["Male", "Female", "Other"],
+      player_status: ["PENDING", "APPROVED", "REJECTED"],
+    },
   },
 } as const

@@ -1,12 +1,12 @@
 import { TournamentHeader } from '@/components/TournamentHeader';
 import { MatchCard } from '@/components/MatchCard';
 import { LiveScoreboard } from '@/components/LiveScoreboard';
-import { useTournamentStore } from '@/store/tournamentStore';
-import { Flame, Clock, Trophy, Zap } from 'lucide-react';
+import { useMatches } from '@/hooks/useMatches';
+import { Flame, Clock, Trophy, Zap, Loader2 } from 'lucide-react';
 import heroBanner from '@/assets/hero-banner.jpg';
 
 const Index = () => {
-  const { matches } = useTournamentStore();
+  const { data: matches = [], isLoading } = useMatches();
   
   const liveMatches = matches.filter(m => m.status === 'LIVE');
   const upcomingMatches = matches.filter(m => m.status === 'UPCOMING');
@@ -59,78 +59,86 @@ const Index = () => {
       </section>
 
       <main className="container mx-auto px-4 py-8 space-y-12">
-        {/* Live Matches Section */}
-        {liveMatches.length > 0 && (
-          <section className="animate-slide-up">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-live/20">
-                <Flame className="h-6 w-6 text-live" />
-              </div>
-              <div>
-                <h2 className="font-display text-2xl font-bold">Live Matches</h2>
-                <p className="text-sm text-muted-foreground">Watch the action unfold in real-time</p>
-              </div>
-            </div>
-            
-            <div className="grid gap-6 lg:grid-cols-2">
-              {liveMatches.map((match) => (
-                <LiveScoreboard key={match.id} match={match} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Upcoming Matches Section */}
-        {upcomingMatches.length > 0 && (
-          <section className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-primary/20">
-                <Clock className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-display text-2xl font-bold">Upcoming Matches</h2>
-                <p className="text-sm text-muted-foreground">Scheduled matches waiting to begin</p>
-              </div>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingMatches.map((match) => (
-                <MatchCard key={match.id} match={match} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Completed Matches Section */}
-        {completedMatches.length > 0 && (
-          <section className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-success/20">
-                <Trophy className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <h2 className="font-display text-2xl font-bold">Completed Matches</h2>
-                <p className="text-sm text-muted-foreground">View match results and winners</p>
-              </div>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {completedMatches.map((match) => (
-                <MatchCard key={match.id} match={match} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Empty State */}
-        {matches.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <Trophy className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="font-display text-xl font-bold mb-2">No Matches Scheduled</h3>
-            <p className="text-muted-foreground">Check back soon for tournament updates!</p>
+        {isLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
+        ) : (
+          <>
+            {/* Live Matches Section */}
+            {liveMatches.length > 0 && (
+              <section className="animate-slide-up">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-live/20">
+                    <Flame className="h-6 w-6 text-live" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-2xl font-bold">Live Matches</h2>
+                    <p className="text-sm text-muted-foreground">Watch the action unfold in real-time</p>
+                  </div>
+                </div>
+                
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {liveMatches.map((match) => (
+                    <LiveScoreboard key={match.id} match={match} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Upcoming Matches Section */}
+            {upcomingMatches.length > 0 && (
+              <section className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Clock className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-2xl font-bold">Upcoming Matches</h2>
+                    <p className="text-sm text-muted-foreground">Scheduled matches waiting to begin</p>
+                  </div>
+                </div>
+                
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {upcomingMatches.map((match) => (
+                    <MatchCard key={match.id} match={match} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Completed Matches Section */}
+            {completedMatches.length > 0 && (
+              <section className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-success/20">
+                    <Trophy className="h-6 w-6 text-success" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-2xl font-bold">Completed Matches</h2>
+                    <p className="text-sm text-muted-foreground">View match results and winners</p>
+                  </div>
+                </div>
+                
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {completedMatches.map((match) => (
+                    <MatchCard key={match.id} match={match} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Empty State */}
+            {matches.length === 0 && !isLoading && (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
+                  <Trophy className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h3 className="font-display text-xl font-bold mb-2">No Matches Scheduled</h3>
+                <p className="text-muted-foreground">Check back soon for tournament updates!</p>
+              </div>
+            )}
+          </>
         )}
       </main>
 

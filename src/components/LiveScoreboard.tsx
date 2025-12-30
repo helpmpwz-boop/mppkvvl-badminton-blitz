@@ -1,9 +1,8 @@
-import { Match } from '@/types/tournament';
+import { Match, useUpdateScore, useSetMatchStatus, useCompleteMatch } from '@/hooks/useMatches';
 import { Button } from '@/components/ui/button';
 import { LiveBadge } from './LiveBadge';
-import { User, Plus, Minus, Trophy, Flag } from 'lucide-react';
+import { User, Plus, Trophy, Flag } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useTournamentStore } from '@/store/tournamentStore';
 import { useState } from 'react';
 
 interface LiveScoreboardProps {
@@ -12,12 +11,14 @@ interface LiveScoreboardProps {
 }
 
 export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps) {
-  const { updateScore, setMatchStatus, completeMatch } = useTournamentStore();
+  const updateScore = useUpdateScore();
+  const setMatchStatus = useSetMatchStatus();
+  const completeMatch = useCompleteMatch();
   const [animateA, setAnimateA] = useState(false);
   const [animateB, setAnimateB] = useState(false);
 
   const handleScore = (player: 'A' | 'B') => {
-    updateScore(match.id, player);
+    updateScore.mutate({ matchId: match.id, playerSide: player });
     if (player === 'A') {
       setAnimateA(true);
       setTimeout(() => setAnimateA(false), 300);
@@ -28,11 +29,11 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
   };
 
   const handleStartMatch = () => {
-    setMatchStatus(match.id, 'LIVE');
+    setMatchStatus.mutate({ matchId: match.id, status: 'LIVE' });
   };
 
   const handleEndMatch = (winnerId: string) => {
-    completeMatch(match.id, winnerId);
+    completeMatch.mutate({ matchId: match.id, winnerId });
   };
 
   return (
@@ -97,7 +98,7 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
             {/* Admin Controls */}
             {adminMode && match.status === 'LIVE' && (
               <div className="mt-6 flex items-center justify-center gap-2">
-                <Button variant="score" size="lg" onClick={() => handleScore('A')}>
+                <Button variant="score" size="lg" onClick={() => handleScore('A')} disabled={updateScore.isPending}>
                   <Plus className="h-6 w-6" />
                 </Button>
               </div>
@@ -143,7 +144,7 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
             {/* Admin Controls */}
             {adminMode && match.status === 'LIVE' && (
               <div className="mt-6 flex items-center justify-center gap-2">
-                <Button variant="score" size="lg" onClick={() => handleScore('B')}>
+                <Button variant="score" size="lg" onClick={() => handleScore('B')} disabled={updateScore.isPending}>
                   <Plus className="h-6 w-6" />
                 </Button>
               </div>
@@ -156,7 +157,12 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
       {adminMode && (
         <div className="px-6 py-4 border-t border-border bg-muted/30">
           {match.status === 'UPCOMING' && (
-            <Button variant="live" className="w-full" onClick={handleStartMatch}>
+            <Button 
+              variant="live" 
+              className="w-full" 
+              onClick={handleStartMatch}
+              disabled={setMatchStatus.isPending}
+            >
               <Flag className="h-4 w-4" />
               START MATCH
             </Button>
@@ -167,6 +173,7 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
                 variant="success" 
                 className="flex-1 bg-success hover:bg-success/90 text-white"
                 onClick={() => handleEndMatch(match.playerA.id)}
+                disabled={completeMatch.isPending}
               >
                 <Trophy className="h-4 w-4" />
                 {match.playerA.name.split(' ')[0]} WINS
@@ -175,6 +182,7 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
                 variant="success" 
                 className="flex-1 bg-success hover:bg-success/90 text-white"
                 onClick={() => handleEndMatch(match.playerB.id)}
+                disabled={completeMatch.isPending}
               >
                 <Trophy className="h-4 w-4" />
                 {match.playerB.name.split(' ')[0]} WINS
