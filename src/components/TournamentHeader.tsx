@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Trophy, Users, ClipboardList, LayoutDashboard, UserPlus } from 'lucide-react';
+import { Trophy, ClipboardList, LayoutDashboard, UserPlus, Monitor } from 'lucide-react';
 
 const navItems = [
   { path: '/', label: 'Live Dashboard', icon: LayoutDashboard },
   { path: '/register', label: 'Register', icon: UserPlus },
+  { path: '/scoreboard', label: 'Scoreboard', icon: Monitor },
   { path: '/admin', label: 'Admin', icon: ClipboardList },
 ];
 
