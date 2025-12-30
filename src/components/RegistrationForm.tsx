@@ -6,10 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTournamentStore } from '@/store/tournamentStore';
-import { useToast } from '@/hooks/use-toast';
-import { User, CheckCircle, Upload } from 'lucide-react';
-import { Category, Gender } from '@/types/tournament';
+import { useAddPlayer } from '@/hooks/usePlayers';
+import { User, CheckCircle, Upload, Loader2 } from 'lucide-react';
 
 const registrationSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -25,18 +23,19 @@ const registrationSchema = z.object({
 });
 
 type RegistrationFormData = z.infer<typeof registrationSchema>;
+type Gender = 'Male' | 'Female' | 'Other';
+type Category = 'Mens Singles' | 'Womens Singles' | 'Mens Doubles' | 'Womens Doubles' | 'Mixed Doubles';
 
 export function RegistrationForm() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const { addPlayer } = useTournamentStore();
-  const { toast } = useToast();
+  const addPlayer = useAddPlayer();
 
   const {
     register,
     handleSubmit,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
@@ -57,29 +56,28 @@ export function RegistrationForm() {
     }
   };
 
-  const onSubmit = (data: RegistrationFormData) => {
-    addPlayer({
-      name: data.name,
-      employeeNumber: data.employeeNumber,
-      location: data.location,
-      designation: data.designation,
-      age: data.age,
-      gender: data.gender,
-      category: data.category,
-      phone: data.phone,
-      photoUrl: photoPreview || undefined,
-      email: data.email || undefined,
-      team: data.team || undefined,
-    });
-    
-    toast({
-      title: "Registration Successful!",
-      description: "Your registration is pending admin approval.",
-    });
-    
-    setIsSubmitted(true);
-    reset();
-    setPhotoPreview(null);
+  const onSubmit = async (data: RegistrationFormData) => {
+    try {
+      await addPlayer.mutateAsync({
+        name: data.name,
+        employeeNumber: data.employeeNumber,
+        location: data.location,
+        designation: data.designation,
+        age: data.age,
+        gender: data.gender,
+        category: data.category,
+        phone: data.phone,
+        photoUrl: photoPreview || undefined,
+        email: data.email || undefined,
+        team: data.team || undefined,
+      });
+      
+      setIsSubmitted(true);
+      reset();
+      setPhotoPreview(null);
+    } catch (error) {
+      // Error is handled by the mutation
+    }
   };
 
   if (isSubmitted) {
@@ -255,9 +253,13 @@ export function RegistrationForm() {
         </div>
       </div>
 
-      <Button type="submit" size="xl" className="w-full" disabled={isSubmitting}>
-        <User className="h-5 w-5" />
-        {isSubmitting ? 'Registering...' : 'Register for Tournament'}
+      <Button type="submit" size="xl" className="w-full" disabled={addPlayer.isPending}>
+        {addPlayer.isPending ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <User className="h-5 w-5" />
+        )}
+        {addPlayer.isPending ? 'Registering...' : 'Register for Tournament'}
       </Button>
     </form>
   );

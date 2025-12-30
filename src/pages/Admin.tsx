@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TournamentHeader } from '@/components/TournamentHeader';
 import { PlayerCard } from '@/components/PlayerCard';
 import { LiveScoreboard } from '@/components/LiveScoreboard';
 import { MatchCard } from '@/components/MatchCard';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTournamentStore } from '@/store/tournamentStore';
-import { useToast } from '@/hooks/use-toast';
+import { usePlayers, useUpdatePlayerStatus } from '@/hooks/usePlayers';
+import { useMatches, useAddMatch } from '@/hooks/useMatches';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Users, 
   ClipboardList, 
@@ -20,13 +21,22 @@ import {
   Plus,
   Calendar,
   Trophy,
-  Search
+  Search,
+  LogOut,
+  Loader2,
+  Shield
 } from 'lucide-react';
-import { Category } from '@/types/tournament';
+import { Database } from '@/integrations/supabase/types';
+
+type PlayerCategory = Database['public']['Enums']['player_category'];
 
 export default function Admin() {
-  const { players, matches, updatePlayerStatus, addMatch } = useTournamentStore();
-  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, isAdmin, loading, signOut } = useAuth();
+  const { data: players = [], isLoading: playersLoading } = usePlayers();
+  const { data: matches = [], isLoading: matchesLoading } = useMatches();
+  const updatePlayerStatus = useUpdatePlayerStatus();
+  const addMatch = useAddMatch();
   
   const [playerFilter, setPlayerFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'REJECTED'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,7 +45,13 @@ export default function Admin() {
   const [selectedPlayerA, setSelectedPlayerA] = useState('');
   const [selectedPlayerB, setSelectedPlayerB] = useState('');
   const [matchCourt, setMatchCourt] = useState('');
-  const [matchCategory, setMatchCategory] = useState<Category>('Mens Singles');
+  const [matchCategory, setMatchCategory] = useState<PlayerCategory>('Mens Singles');
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
   
   const pendingPlayers = players.filter(p => p.status === 'PENDING');
   const approvedPlayers = players.filter(p => p.status === 'APPROVED');
@@ -50,35 +66,24 @@ export default function Admin() {
   });
 
   const handleApprove = (playerId: string) => {
-    updatePlayerStatus(playerId, 'APPROVED');
-    toast({
-      title: "Player Approved",
-      description: "The player has been approved for the tournament.",
-    });
+    updatePlayerStatus.mutate({ playerId, status: 'APPROVED' });
   };
 
   const handleReject = (playerId: string) => {
-    updatePlayerStatus(playerId, 'REJECTED');
-    toast({
-      title: "Player Rejected",
-      description: "The player registration has been rejected.",
-    });
+    updatePlayerStatus.mutate({ playerId, status: 'REJECTED' });
   };
 
   const handleCreateMatch = () => {
     if (!selectedPlayerA || !selectedPlayerB || selectedPlayerA === selectedPlayerB) {
-      toast({
-        title: "Invalid Selection",
-        description: "Please select two different players for the match.",
-        variant: "destructive",
-      });
       return;
     }
 
-    addMatch(selectedPlayerA, selectedPlayerB, new Date(), matchCourt || 'Court 1', matchCategory);
-    toast({
-      title: "Match Created",
-      description: "The match has been scheduled successfully.",
+    addMatch.mutate({
+      playerAId: selectedPlayerA,
+      playerBId: selectedPlayerB,
+      scheduledAt: new Date(),
+      court: matchCourt || 'Court 1',
+      category: matchCategory,
     });
     
     setSelectedPlayerA('');
@@ -86,15 +91,57 @@ export default function Admin() {
     setMatchCourt('');
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen">
       <TournamentHeader />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage players, matches, and tournament settings</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-display text-3xl font-bold mb-2">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Manage players, matches, and tournament settings</p>
+          </div>
+          <div className="flex items-center gap-4">
+            {isAdmin && (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-success/20 border border-success/30">
+                <Shield className="h-4 w-4 text-success" />
+                <span className="text-sm text-success font-medium">Admin</span>
+              </div>
+            )}
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
+
+        {!isAdmin && (
+          <div className="bg-warning/10 border border-warning/30 rounded-xl p-6 mb-8 text-center">
+            <Shield className="h-12 w-12 mx-auto mb-4 text-warning" />
+            <h2 className="font-display text-xl font-bold mb-2">Admin Access Required</h2>
+            <p className="text-muted-foreground">
+              You are logged in but don't have admin privileges yet.<br />
+              Contact an existing admin to grant you access.
+            </p>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -198,161 +245,194 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Players Grid */}
-            <div className="grid gap-4 md:grid-cols-2">
-              {filteredPlayers.map((player) => (
-                <div key={player.id} className="relative">
-                  <PlayerCard player={player} />
-                  {player.status === 'PENDING' && (
-                    <div className="absolute top-4 right-4 flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="success"
-                        onClick={() => handleApprove(player.id)}
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleReject(player.id)}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {filteredPlayers.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No players found</p>
+            {playersLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : (
+              <>
+                {/* Players Grid */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  {filteredPlayers.map((player) => (
+                    <div key={player.id} className="relative">
+                      <PlayerCard player={player} />
+                      {player.status === 'PENDING' && isAdmin && (
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => handleApprove(player.id)}
+                            disabled={updatePlayerStatus.isPending}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleReject(player.id)}
+                            disabled={updatePlayerStatus.isPending}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {filteredPlayers.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No players found</p>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
 
           {/* Matches Tab */}
           <TabsContent value="matches" className="space-y-6">
             {/* Create Match Form */}
-            <div className="bg-gradient-card rounded-xl border border-border p-6">
-              <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
-                <Plus className="h-5 w-5 text-primary" />
-                Schedule New Match
-              </h3>
-              
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                <div className="space-y-2">
-                  <Label>Player A</Label>
-                  <Select value={selectedPlayerA} onValueChange={setSelectedPlayerA}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select player" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {approvedPlayers.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Player B</Label>
-                  <Select value={selectedPlayerB} onValueChange={setSelectedPlayerB}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select player" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {approvedPlayers
-                        .filter(p => p.id !== selectedPlayerA)
-                        .map((player) => (
+            {isAdmin && (
+              <div className="bg-gradient-card rounded-xl border border-border p-6">
+                <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
+                  <Plus className="h-5 w-5 text-primary" />
+                  Schedule New Match
+                </h3>
+                
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                  <div className="space-y-2">
+                    <Label>Player A</Label>
+                    <Select value={selectedPlayerA} onValueChange={setSelectedPlayerA}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select player" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {approvedPlayers.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name}
                           </SelectItem>
                         ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select value={matchCategory} onValueChange={(v) => setMatchCategory(v as Category)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Mens Singles">Men's Singles</SelectItem>
-                      <SelectItem value="Womens Singles">Women's Singles</SelectItem>
-                      <SelectItem value="Mens Doubles">Men's Doubles</SelectItem>
-                      <SelectItem value="Womens Doubles">Women's Doubles</SelectItem>
-                      <SelectItem value="Mixed Doubles">Mixed Doubles</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="space-y-2">
+                    <Label>Player B</Label>
+                    <Select value={selectedPlayerB} onValueChange={setSelectedPlayerB}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select player" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {approvedPlayers
+                          .filter(p => p.id !== selectedPlayerA)
+                          .map((player) => (
+                            <SelectItem key={player.id} value={player.id}>
+                              {player.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>Court</Label>
-                  <Input
-                    placeholder="e.g., Court 1"
-                    value={matchCourt}
-                    onChange={(e) => setMatchCourt(e.target.value)}
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select value={matchCategory} onValueChange={(v) => setMatchCategory(v as PlayerCategory)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Mens Singles">Men's Singles</SelectItem>
+                        <SelectItem value="Womens Singles">Women's Singles</SelectItem>
+                        <SelectItem value="Mens Doubles">Men's Doubles</SelectItem>
+                        <SelectItem value="Womens Doubles">Women's Doubles</SelectItem>
+                        <SelectItem value="Mixed Doubles">Mixed Doubles</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>&nbsp;</Label>
-                  <Button className="w-full" onClick={handleCreateMatch}>
-                    <Plus className="h-4 w-4" />
-                    Create Match
-                  </Button>
+                  <div className="space-y-2">
+                    <Label>Court</Label>
+                    <Input
+                      placeholder="e.g., Court 1"
+                      value={matchCourt}
+                      onChange={(e) => setMatchCourt(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>&nbsp;</Label>
+                    <Button 
+                      className="w-full" 
+                      onClick={handleCreateMatch}
+                      disabled={!selectedPlayerA || !selectedPlayerB || addMatch.isPending}
+                    >
+                      {addMatch.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      Create Match
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Match Lists */}
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div>
-                <h3 className="font-display text-lg font-bold mb-4">Upcoming Matches</h3>
-                <div className="space-y-4">
-                  {upcomingMatches.map((match) => (
-                    <MatchCard key={match.id} match={match} />
-                  ))}
-                  {upcomingMatches.length === 0 && (
-                    <p className="text-center py-8 text-muted-foreground">No upcoming matches</p>
-                  )}
+            {matchesLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div>
+                  <h3 className="font-display text-lg font-bold mb-4">Upcoming Matches</h3>
+                  <div className="space-y-4">
+                    {upcomingMatches.map((match) => (
+                      <MatchCard key={match.id} match={match} />
+                    ))}
+                    {upcomingMatches.length === 0 && (
+                      <p className="text-center py-8 text-muted-foreground">No upcoming matches</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold mb-4">Live Matches</h3>
+                  <div className="space-y-4">
+                    {liveMatches.map((match) => (
+                      <MatchCard key={match.id} match={match} />
+                    ))}
+                    {liveMatches.length === 0 && (
+                      <p className="text-center py-8 text-muted-foreground">No live matches</p>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div>
-                <h3 className="font-display text-lg font-bold mb-4">Live Matches</h3>
-                <div className="space-y-4">
-                  {liveMatches.map((match) => (
-                    <MatchCard key={match.id} match={match} />
-                  ))}
-                  {liveMatches.length === 0 && (
-                    <p className="text-center py-8 text-muted-foreground">No live matches</p>
-                  )}
-                </div>
-              </div>
-            </div>
+            )}
           </TabsContent>
 
           {/* Live Scoring Tab */}
           <TabsContent value="scoring" className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
-              {[...liveMatches, ...upcomingMatches].map((match) => (
-                <LiveScoreboard key={match.id} match={match} adminMode />
-              ))}
-            </div>
-            
-            {liveMatches.length === 0 && upcomingMatches.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Gamepad2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No matches available for scoring</p>
-                <p className="text-sm mt-2">Create a match in the Matches tab first</p>
+            {matchesLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : (
+              <>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {[...liveMatches, ...upcomingMatches].map((match) => (
+                    <LiveScoreboard key={match.id} match={match} adminMode={isAdmin} />
+                  ))}
+                </div>
+                
+                {liveMatches.length === 0 && upcomingMatches.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Gamepad2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No matches available for scoring</p>
+                    <p className="text-sm mt-2">Create a match in the Matches tab first</p>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>
