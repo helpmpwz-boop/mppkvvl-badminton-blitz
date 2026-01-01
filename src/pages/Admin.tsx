@@ -4,6 +4,8 @@ import { TournamentHeader } from '@/components/TournamentHeader';
 import { PlayerCard } from '@/components/PlayerCard';
 import { LiveScoreboard } from '@/components/LiveScoreboard';
 import { MatchCard } from '@/components/MatchCard';
+import { UserManagement } from '@/components/admin/UserManagement';
+import { CSVUploadForm } from '@/components/admin/CSVUploadForm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +26,9 @@ import {
   Search,
   LogOut,
   Loader2,
-  Shield
+  Shield,
+  UserCog,
+  Upload
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 
@@ -192,7 +196,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="players" className="space-y-6">
-          <TabsList className="bg-muted/50 p-1">
+          <TabsList className="bg-muted/50 p-1 flex-wrap h-auto">
             <TabsTrigger value="players" className="gap-2">
               <Users className="h-4 w-4" />
               Players
@@ -205,6 +209,18 @@ export default function Admin() {
               <Trophy className="h-4 w-4" />
               Live Scoring
             </TabsTrigger>
+            {isAdmin && (
+              <>
+                <TabsTrigger value="users" className="gap-2">
+                  <UserCog className="h-4 w-4" />
+                  Users
+                </TabsTrigger>
+                <TabsTrigger value="csv-upload" className="gap-2">
+                  <Upload className="h-4 w-4" />
+                  CSV Upload
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           {/* Players Tab */}
@@ -435,6 +451,26 @@ export default function Admin() {
               </>
             )}
           </TabsContent>
+
+          {/* User Management Tab - Admin Only */}
+          {isAdmin && (
+            <TabsContent value="users" className="space-y-6">
+              <UserManagement />
+            </TabsContent>
+          )}
+
+          {/* CSV Upload Tab - Admin Only */}
+          {isAdmin && (
+            <TabsContent value="csv-upload" className="space-y-6">
+              <div className="bg-gradient-card rounded-xl border border-border p-6">
+                <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-primary" />
+                  Bulk Player Registration
+                </h3>
+                <CSVUploadForm />
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
