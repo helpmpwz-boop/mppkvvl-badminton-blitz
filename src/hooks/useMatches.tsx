@@ -13,7 +13,9 @@ type PlayerCategory = Database['public']['Enums']['player_category'];
 export interface Match {
   id: string;
   playerA: Player;
+  playerA2?: Player;  // Doubles partner
   playerB: Player;
+  playerB2?: Player;  // Doubles partner
   scoreA: number;
   scoreB: number;
   status: 'UPCOMING' | 'LIVE' | 'COMPLETED';
@@ -25,7 +27,9 @@ export interface Match {
 
 interface MatchWithPlayers extends MatchRow {
   player_a: Database['public']['Tables']['players']['Row'];
+  player_a2: Database['public']['Tables']['players']['Row'] | null;
   player_b: Database['public']['Tables']['players']['Row'];
+  player_b2: Database['public']['Tables']['players']['Row'] | null;
   winner: Database['public']['Tables']['players']['Row'] | null;
 }
 
@@ -49,7 +53,9 @@ const mapPlayerRow = (row: Database['public']['Tables']['players']['Row']): Play
 const mapRowToMatch = (row: MatchWithPlayers): Match => ({
   id: row.id,
   playerA: mapPlayerRow(row.player_a),
+  playerA2: row.player_a2 ? mapPlayerRow(row.player_a2) : undefined,
   playerB: mapPlayerRow(row.player_b),
+  playerB2: row.player_b2 ? mapPlayerRow(row.player_b2) : undefined,
   scoreA: row.score_a,
   scoreB: row.score_b,
   status: row.status as Match['status'],
@@ -93,7 +99,9 @@ export function useMatches() {
         .select(`
           *,
           player_a:players!matches_player_a_id_fkey(*),
+          player_a2:players!matches_player_a2_id_fkey(*),
           player_b:players!matches_player_b_id_fkey(*),
+          player_b2:players!matches_player_b2_id_fkey(*),
           winner:players!matches_winner_id_fkey(*)
         `)
         .order('scheduled_at', { ascending: true });
@@ -111,20 +119,26 @@ export function useAddMatch() {
   return useMutation({
     mutationFn: async ({ 
       playerAId, 
+      playerA2Id,
       playerBId, 
+      playerB2Id,
       scheduledAt, 
       court, 
       category 
     }: { 
       playerAId: string; 
+      playerA2Id?: string;
       playerBId: string; 
+      playerB2Id?: string;
       scheduledAt: Date; 
       court: string; 
       category: PlayerCategory;
     }) => {
       const insert: MatchInsert = {
         player_a_id: playerAId,
+        player_a2_id: playerA2Id || null,
         player_b_id: playerBId,
+        player_b2_id: playerB2Id || null,
         scheduled_at: scheduledAt.toISOString(),
         court,
         category,

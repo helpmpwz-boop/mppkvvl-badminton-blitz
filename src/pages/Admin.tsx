@@ -47,9 +47,13 @@ export default function Admin() {
   
   // New match form state
   const [selectedPlayerA, setSelectedPlayerA] = useState('');
+  const [selectedPlayerA2, setSelectedPlayerA2] = useState('');
   const [selectedPlayerB, setSelectedPlayerB] = useState('');
+  const [selectedPlayerB2, setSelectedPlayerB2] = useState('');
   const [matchCourt, setMatchCourt] = useState('');
   const [matchCategory, setMatchCategory] = useState<PlayerCategory>('Mens Singles');
+
+  const isDoublesCategory = matchCategory.includes('Doubles');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -82,16 +86,25 @@ export default function Admin() {
       return;
     }
 
+    // For doubles, ensure partners are selected
+    if (isDoublesCategory && (!selectedPlayerA2 || !selectedPlayerB2)) {
+      return;
+    }
+
     addMatch.mutate({
       playerAId: selectedPlayerA,
+      playerA2Id: isDoublesCategory ? selectedPlayerA2 : undefined,
       playerBId: selectedPlayerB,
+      playerB2Id: isDoublesCategory ? selectedPlayerB2 : undefined,
       scheduledAt: new Date(),
       court: matchCourt || 'Court 1',
       category: matchCategory,
     });
     
     setSelectedPlayerA('');
+    setSelectedPlayerA2('');
     setSelectedPlayerB('');
+    setSelectedPlayerB2('');
     setMatchCourt('');
   };
 
@@ -316,44 +329,16 @@ export default function Admin() {
                   Schedule New Match
                 </h3>
                 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                  <div className="space-y-2">
-                    <Label>Player A</Label>
-                    <Select value={selectedPlayerA} onValueChange={setSelectedPlayerA}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select player" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {approvedPlayers.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Player B</Label>
-                    <Select value={selectedPlayerB} onValueChange={setSelectedPlayerB}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select player" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {approvedPlayers
-                          .filter(p => p.id !== selectedPlayerA)
-                          .map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              {player.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {/* Category - moved first so doubles logic works */}
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select value={matchCategory} onValueChange={(v) => setMatchCategory(v as PlayerCategory)}>
+                    <Select value={matchCategory} onValueChange={(v) => {
+                      setMatchCategory(v as PlayerCategory);
+                      // Reset partner selections when switching category
+                      setSelectedPlayerA2('');
+                      setSelectedPlayerB2('');
+                    }}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -381,7 +366,12 @@ export default function Admin() {
                     <Button 
                       className="w-full" 
                       onClick={handleCreateMatch}
-                      disabled={!selectedPlayerA || !selectedPlayerB || addMatch.isPending}
+                      disabled={
+                        !selectedPlayerA || 
+                        !selectedPlayerB || 
+                        (isDoublesCategory && (!selectedPlayerA2 || !selectedPlayerB2)) ||
+                        addMatch.isPending
+                      }
                     >
                       {addMatch.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -390,6 +380,89 @@ export default function Admin() {
                       )}
                       Create Match
                     </Button>
+                  </div>
+                </div>
+
+                {/* Players Selection */}
+                <div className="grid gap-4 md:grid-cols-2 mt-4">
+                  {/* Team A */}
+                  <div className="space-y-4 p-4 rounded-lg bg-muted/30 border border-border">
+                    <h4 className="font-semibold text-sm text-primary">Team A</h4>
+                    <div className="space-y-2">
+                      <Label>Player A1</Label>
+                      <Select value={selectedPlayerA} onValueChange={setSelectedPlayerA}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select player" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {approvedPlayers.map((player) => (
+                            <SelectItem key={player.id} value={player.id}>
+                              {player.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {isDoublesCategory && (
+                      <div className="space-y-2">
+                        <Label>Player A2 (Partner)</Label>
+                        <Select value={selectedPlayerA2} onValueChange={setSelectedPlayerA2}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select partner" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {approvedPlayers
+                              .filter(p => p.id !== selectedPlayerA && p.id !== selectedPlayerB && p.id !== selectedPlayerB2)
+                              .map((player) => (
+                                <SelectItem key={player.id} value={player.id}>
+                                  {player.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Team B */}
+                  <div className="space-y-4 p-4 rounded-lg bg-muted/30 border border-border">
+                    <h4 className="font-semibold text-sm text-destructive">Team B</h4>
+                    <div className="space-y-2">
+                      <Label>Player B1</Label>
+                      <Select value={selectedPlayerB} onValueChange={setSelectedPlayerB}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select player" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {approvedPlayers
+                            .filter(p => p.id !== selectedPlayerA && p.id !== selectedPlayerA2)
+                            .map((player) => (
+                              <SelectItem key={player.id} value={player.id}>
+                                {player.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {isDoublesCategory && (
+                      <div className="space-y-2">
+                        <Label>Player B2 (Partner)</Label>
+                        <Select value={selectedPlayerB2} onValueChange={setSelectedPlayerB2}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select partner" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {approvedPlayers
+                              .filter(p => p.id !== selectedPlayerA && p.id !== selectedPlayerA2 && p.id !== selectedPlayerB)
+                              .map((player) => (
+                                <SelectItem key={player.id} value={player.id}>
+                                  {player.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
