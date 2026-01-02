@@ -1,7 +1,8 @@
-import { Match, useUpdateScore, useSetMatchStatus, useCompleteMatch } from '@/hooks/useMatches';
+import { Match, useUpdateScore, useSetMatchStatus, useCompleteMatch, useEndSet } from '@/hooks/useMatches';
 import { Button } from '@/components/ui/button';
 import { LiveBadge } from './LiveBadge';
-import { User, Plus, Trophy, Flag } from 'lucide-react';
+import { SetScoreDisplay } from './SetScoreDisplay';
+import { User, Plus, Trophy, Flag, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -14,6 +15,7 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
   const updateScore = useUpdateScore();
   const setMatchStatus = useSetMatchStatus();
   const completeMatch = useCompleteMatch();
+  const endSet = useEndSet();
   const [animateA, setAnimateA] = useState(false);
   const [animateB, setAnimateB] = useState(false);
 
@@ -32,8 +34,32 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
     setMatchStatus.mutate({ matchId: match.id, status: 'LIVE' });
   };
 
+  const handleEndSet = (winner: 'A' | 'B') => {
+    endSet.mutate({ matchId: match.id, setWinner: winner });
+  };
+
   const handleEndMatch = (winnerId: string) => {
     completeMatch.mutate({ matchId: match.id, winnerId });
+  };
+
+  // Get current set scores
+  const currentSetScores = match.currentSet === 1 
+    ? match.setScores.set1 
+    : match.currentSet === 2 
+      ? match.setScores.set2 
+      : match.setScores.set3;
+
+  // Get winner name for doubles
+  const getWinnerName = () => {
+    if (!match.winner) return null;
+    if (match.winner.id === match.playerA.id) {
+      return match.playerA2 
+        ? `${match.playerA.name} & ${match.playerA2.name}`
+        : match.playerA.name;
+    }
+    return match.playerB2 
+      ? `${match.playerB.name} & ${match.playerB2.name}`
+      : match.playerB.name;
   };
 
   return (
@@ -47,7 +73,14 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
             </p>
             <h2 className="font-display text-xl font-bold mt-1">MPPKVVCL INDORE</h2>
           </div>
-          {match.status === 'LIVE' && <LiveBadge />}
+          {match.status === 'LIVE' && (
+            <div className="flex items-center gap-3">
+              <div className="px-3 py-1 bg-primary/20 rounded-full">
+                <span className="text-sm font-display font-bold text-primary">SET {match.currentSet}</span>
+              </div>
+              <LiveBadge />
+            </div>
+          )}
           {match.status === 'UPCOMING' && (
             <div className="text-sm text-muted-foreground">Match Starting Soon...</div>
           )}
@@ -60,9 +93,30 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
         </div>
       </div>
 
+      {/* Set Scores */}
+      <div className="px-6 py-4 border-b border-border bg-muted/30">
+        <SetScoreDisplay 
+          setScores={match.setScores}
+          setsWonA={match.setsWonA}
+          setsWonB={match.setsWonB}
+          currentSet={match.currentSet}
+        />
+      </div>
+
+      {/* Winner Banner */}
+      {match.status === 'COMPLETED' && match.winner && (
+        <div className="px-6 py-4 bg-success/10 border-b border-success/30">
+          <div className="flex items-center justify-center gap-2">
+            <Trophy className="h-6 w-6 text-success" />
+            <span className="font-display text-xl font-bold text-success">
+              WINNER: {getWinnerName()}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Main Scoreboard */}
       <div className="p-6 md:p-10 relative">
-        {/* Background glow effect */}
         <div className="absolute inset-0 bg-glow opacity-30" />
         
         <div className="relative flex items-center justify-between gap-4">
@@ -85,14 +139,17 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
               )}
             </div>
             <h3 className="font-display text-xl md:text-2xl font-bold mt-4">{match.playerA.name}</h3>
+            {match.playerA2 && (
+              <h4 className="font-display text-lg md:text-xl font-semibold text-primary">{match.playerA2.name}</h4>
+            )}
             <p className="text-sm text-muted-foreground">{match.playerA.location}</p>
             
-            {/* Score */}
+            {/* Current Set Score */}
             <div className={cn(
               "mt-6 score-display text-primary transition-transform",
               animateA && "animate-score-pop"
             )}>
-              {match.scoreA}
+              {currentSetScores.a}
             </div>
 
             {/* Admin Controls */}
@@ -131,14 +188,17 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
               )}
             </div>
             <h3 className="font-display text-xl md:text-2xl font-bold mt-4">{match.playerB.name}</h3>
+            {match.playerB2 && (
+              <h4 className="font-display text-lg md:text-xl font-semibold text-primary">{match.playerB2.name}</h4>
+            )}
             <p className="text-sm text-muted-foreground">{match.playerB.location}</p>
             
-            {/* Score */}
+            {/* Current Set Score */}
             <div className={cn(
               "mt-6 score-display text-primary transition-transform",
               animateB && "animate-score-pop"
             )}>
-              {match.scoreB}
+              {currentSetScores.b}
             </div>
 
             {/* Admin Controls */}
@@ -155,7 +215,7 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
 
       {/* Admin Actions */}
       {adminMode && (
-        <div className="px-6 py-4 border-t border-border bg-muted/30">
+        <div className="px-6 py-4 border-t border-border bg-muted/30 space-y-3">
           {match.status === 'UPCOMING' && (
             <Button 
               variant="live" 
@@ -167,27 +227,55 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
               START MATCH
             </Button>
           )}
+          
           {match.status === 'LIVE' && (
-            <div className="flex gap-3">
-              <Button 
-                variant="success" 
-                className="flex-1 bg-success hover:bg-success/90 text-white"
-                onClick={() => handleEndMatch(match.playerA.id)}
-                disabled={completeMatch.isPending}
-              >
-                <Trophy className="h-4 w-4" />
-                {match.playerA.name.split(' ')[0]} WINS
-              </Button>
-              <Button 
-                variant="success" 
-                className="flex-1 bg-success hover:bg-success/90 text-white"
-                onClick={() => handleEndMatch(match.playerB.id)}
-                disabled={completeMatch.isPending}
-              >
-                <Trophy className="h-4 w-4" />
-                {match.playerB.name.split(' ')[0]} WINS
-              </Button>
-            </div>
+            <>
+              {/* End Set Buttons */}
+              {match.currentSet <= 3 && (
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleEndSet('A')}
+                    disabled={endSet.isPending}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                    {match.playerA.name.split(' ')[0]} Wins Set
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleEndSet('B')}
+                    disabled={endSet.isPending}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                    {match.playerB.name.split(' ')[0]} Wins Set
+                  </Button>
+                </div>
+              )}
+
+              {/* End Match Buttons */}
+              <div className="flex gap-3">
+                <Button 
+                  variant="success" 
+                  className="flex-1 bg-success hover:bg-success/90 text-white"
+                  onClick={() => handleEndMatch(match.playerA.id)}
+                  disabled={completeMatch.isPending}
+                >
+                  <Trophy className="h-4 w-4" />
+                  {match.playerA.name.split(' ')[0]} WINS MATCH
+                </Button>
+                <Button 
+                  variant="success" 
+                  className="flex-1 bg-success hover:bg-success/90 text-white"
+                  onClick={() => handleEndMatch(match.playerB.id)}
+                  disabled={completeMatch.isPending}
+                >
+                  <Trophy className="h-4 w-4" />
+                  {match.playerB.name.split(' ')[0]} WINS MATCH
+                </Button>
+              </div>
+            </>
           )}
         </div>
       )}

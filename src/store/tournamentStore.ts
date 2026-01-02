@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { Player, Match, PlayerStatus, MatchStatus, Category } from '@/types/tournament';
+import { Player, Match, PlayerStatus, MatchStatus, Category, SetScores } from '@/types/tournament';
+
+const defaultSetScores: SetScores = {
+  set1: { a: 0, b: 0 },
+  set2: { a: 0, b: 0 },
+  set3: { a: 0, b: 0 },
+};
 
 // Sample data for demonstration
 const samplePlayers: Player[] = [
@@ -67,6 +73,14 @@ const sampleMatches: Match[] = [
     playerB: samplePlayers[1],
     scoreA: 15,
     scoreB: 12,
+    setsWonA: 1,
+    setsWonB: 0,
+    currentSet: 2,
+    setScores: {
+      set1: { a: 21, b: 18 },
+      set2: { a: 15, b: 12 },
+      set3: { a: 0, b: 0 },
+    },
     status: 'LIVE',
     scheduledAt: new Date(),
     court: 'Court 1',
@@ -78,6 +92,10 @@ const sampleMatches: Match[] = [
     playerB: samplePlayers[0],
     scoreA: 0,
     scoreB: 0,
+    setsWonA: 0,
+    setsWonB: 0,
+    currentSet: 1,
+    setScores: defaultSetScores,
     status: 'UPCOMING',
     scheduledAt: new Date(Date.now() + 3600000),
     court: 'Court 2',
@@ -130,6 +148,10 @@ export const useTournamentStore = create<TournamentStore>((set, get) => ({
       playerB,
       scoreA: 0,
       scoreB: 0,
+      setsWonA: 0,
+      setsWonB: 0,
+      currentSet: 1,
+      setScores: { ...defaultSetScores },
       status: 'UPCOMING',
       scheduledAt,
       court,

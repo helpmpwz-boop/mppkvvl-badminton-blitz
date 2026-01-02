@@ -19,6 +19,7 @@ export type Database = {
           category: Database["public"]["Enums"]["player_category"]
           court: string
           created_at: string
+          current_set: number
           id: string
           player_a_id: string
           player_a2_id: string | null
@@ -27,6 +28,14 @@ export type Database = {
           scheduled_at: string
           score_a: number
           score_b: number
+          set1_score_a: number
+          set1_score_b: number
+          set2_score_a: number
+          set2_score_b: number
+          set3_score_a: number
+          set3_score_b: number
+          sets_won_a: number
+          sets_won_b: number
           status: Database["public"]["Enums"]["match_status"]
           updated_at: string
           winner_id: string | null
@@ -35,6 +44,7 @@ export type Database = {
           category: Database["public"]["Enums"]["player_category"]
           court: string
           created_at?: string
+          current_set?: number
           id?: string
           player_a_id: string
           player_a2_id?: string | null
@@ -43,6 +53,14 @@ export type Database = {
           scheduled_at: string
           score_a?: number
           score_b?: number
+          set1_score_a?: number
+          set1_score_b?: number
+          set2_score_a?: number
+          set2_score_b?: number
+          set3_score_a?: number
+          set3_score_b?: number
+          sets_won_a?: number
+          sets_won_b?: number
           status?: Database["public"]["Enums"]["match_status"]
           updated_at?: string
           winner_id?: string | null
@@ -51,6 +69,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["player_category"]
           court?: string
           created_at?: string
+          current_set?: number
           id?: string
           player_a_id?: string
           player_a2_id?: string | null
@@ -59,6 +78,14 @@ export type Database = {
           scheduled_at?: string
           score_a?: number
           score_b?: number
+          set1_score_a?: number
+          set1_score_b?: number
+          set2_score_a?: number
+          set2_score_b?: number
+          set3_score_a?: number
+          set3_score_b?: number
+          sets_won_a?: number
+          sets_won_b?: number
           status?: Database["public"]["Enums"]["match_status"]
           updated_at?: string
           winner_id?: string | null
