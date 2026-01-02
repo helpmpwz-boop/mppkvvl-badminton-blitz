@@ -1,5 +1,6 @@
 import { useMatches } from '@/hooks/useMatches';
 import { LiveBadge } from '@/components/LiveBadge';
+import { SetScoreDisplay } from '@/components/SetScoreDisplay';
 import { Link } from 'react-router-dom';
 import { Trophy, User, Clock, Maximize2, Minimize2, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,12 +16,11 @@ export default function Scoreboard() {
   const upcomingMatches = matches.filter(m => m.status === 'UPCOMING');
   const displayMatches = liveMatches.length > 0 ? liveMatches : upcomingMatches.slice(0, 2);
 
-  // Auto-cycle through matches if multiple
   useEffect(() => {
     if (displayMatches.length > 1) {
       const interval = setInterval(() => {
         setCurrentMatchIndex((prev) => (prev + 1) % displayMatches.length);
-      }, 15000); // Switch every 15 seconds
+      }, 15000);
       return () => clearInterval(interval);
     }
   }, [displayMatches.length]);
@@ -44,6 +44,30 @@ export default function Scoreboard() {
   }, []);
 
   const currentMatch = displayMatches[currentMatchIndex];
+
+  // Get current set scores
+  const getCurrentSetScores = () => {
+    if (!currentMatch) return { a: 0, b: 0 };
+    const set = currentMatch.currentSet;
+    if (set === 1) return currentMatch.setScores.set1;
+    if (set === 2) return currentMatch.setScores.set2;
+    return currentMatch.setScores.set3;
+  };
+
+  const currentSetScores = getCurrentSetScores();
+
+  // Get winner name for doubles
+  const getWinnerName = () => {
+    if (!currentMatch?.winner) return null;
+    if (currentMatch.winner.id === currentMatch.playerA.id) {
+      return currentMatch.playerA2 
+        ? `${currentMatch.playerA.name} & ${currentMatch.playerA2.name}`
+        : currentMatch.playerA.name;
+    }
+    return currentMatch.playerB2 
+      ? `${currentMatch.playerB.name} & ${currentMatch.playerB2.name}`
+      : currentMatch.playerB.name;
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -102,10 +126,15 @@ export default function Scoreboard() {
         {currentMatch ? (
           <div className="w-full max-w-7xl">
             {/* Match Header */}
-            <div className="text-center mb-8 md:mb-12">
+            <div className="text-center mb-6 md:mb-10">
               <div className="inline-flex items-center gap-3 mb-4">
                 {currentMatch.status === 'LIVE' ? (
-                  <LiveBadge />
+                  <>
+                    <div className="px-4 py-2 rounded-full bg-primary/20 border border-primary/30">
+                      <span className="font-display font-bold text-primary">SET {currentMatch.currentSet}</span>
+                    </div>
+                    <LiveBadge />
+                  </>
                 ) : (
                   <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border">
                     <Clock className="h-5 w-5 text-primary" />
@@ -118,17 +147,47 @@ export default function Scoreboard() {
               </h2>
             </div>
 
+            {/* Set Scores Display */}
+            {currentMatch.status !== 'UPCOMING' && (
+              <div className="mb-6 flex justify-center">
+                <div className="bg-card/80 backdrop-blur rounded-2xl px-8 py-4 border border-border">
+                  <SetScoreDisplay
+                    setScores={currentMatch.setScores}
+                    setsWonA={currentMatch.setsWonA}
+                    setsWonB={currentMatch.setsWonB}
+                    currentSet={currentMatch.currentSet}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Winner Banner */}
+            {currentMatch.status === 'COMPLETED' && currentMatch.winner && (
+              <div className="mb-6 text-center">
+                <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-success/20 border border-success/30">
+                  <Trophy className="h-8 w-8 text-success" />
+                  <span className="font-display text-2xl md:text-4xl font-bold text-success">
+                    WINNER: {getWinnerName()}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Scoreboard */}
             <div className="bg-gradient-card rounded-3xl border-2 border-border overflow-hidden">
               <div className="p-8 md:p-16 relative">
-                {/* Background glow */}
                 <div className="absolute inset-0 bg-glow opacity-40" />
                 
                 <div className="relative flex items-center justify-between gap-8">
                   {/* Player A */}
                   <div className="flex-1 text-center">
                     <div className="relative inline-block">
-                      <div className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 mx-auto rounded-full overflow-hidden bg-muted border-4 border-primary/30 shadow-lg shadow-primary/20">
+                      <div className={cn(
+                        "w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 mx-auto rounded-full overflow-hidden bg-muted border-4 shadow-lg",
+                        currentMatch.winner?.id === currentMatch.playerA.id 
+                          ? "border-success shadow-success/20" 
+                          : "border-primary/30 shadow-primary/20"
+                      )}>
                         {currentMatch.playerA.photoUrl ? (
                           <img 
                             src={currentMatch.playerA.photoUrl} 
@@ -148,18 +207,23 @@ export default function Scoreboard() {
                       )}
                     </div>
                     
-                    <h3 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold mt-6 mb-2">
+                    <h3 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold mt-6 mb-1">
                       {currentMatch.playerA.name}
                     </h3>
+                    {currentMatch.playerA2 && (
+                      <h4 className="font-display text-xl md:text-2xl lg:text-3xl font-semibold text-primary mb-2">
+                        {currentMatch.playerA2.name}
+                      </h4>
+                    )}
                     <p className="text-lg md:text-xl text-muted-foreground">
                       {currentMatch.playerA.location}
                     </p>
                     
-                    {/* Score */}
+                    {/* Current Set Score */}
                     <div className="mt-8 md:mt-12">
                       <div className="inline-block bg-background/50 rounded-2xl px-8 py-4 md:px-12 md:py-6 border border-border">
                         <span className="font-display text-8xl md:text-[10rem] lg:text-[12rem] font-black text-primary leading-none">
-                          {currentMatch.scoreA}
+                          {currentSetScores.a}
                         </span>
                       </div>
                     </div>
@@ -177,7 +241,12 @@ export default function Scoreboard() {
                   {/* Player B */}
                   <div className="flex-1 text-center">
                     <div className="relative inline-block">
-                      <div className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 mx-auto rounded-full overflow-hidden bg-muted border-4 border-primary/30 shadow-lg shadow-primary/20">
+                      <div className={cn(
+                        "w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 mx-auto rounded-full overflow-hidden bg-muted border-4 shadow-lg",
+                        currentMatch.winner?.id === currentMatch.playerB.id 
+                          ? "border-success shadow-success/20" 
+                          : "border-primary/30 shadow-primary/20"
+                      )}>
                         {currentMatch.playerB.photoUrl ? (
                           <img 
                             src={currentMatch.playerB.photoUrl} 
@@ -197,18 +266,23 @@ export default function Scoreboard() {
                       )}
                     </div>
                     
-                    <h3 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold mt-6 mb-2">
+                    <h3 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold mt-6 mb-1">
                       {currentMatch.playerB.name}
                     </h3>
+                    {currentMatch.playerB2 && (
+                      <h4 className="font-display text-xl md:text-2xl lg:text-3xl font-semibold text-primary mb-2">
+                        {currentMatch.playerB2.name}
+                      </h4>
+                    )}
                     <p className="text-lg md:text-xl text-muted-foreground">
                       {currentMatch.playerB.location}
                     </p>
                     
-                    {/* Score */}
+                    {/* Current Set Score */}
                     <div className="mt-8 md:mt-12">
                       <div className="inline-block bg-background/50 rounded-2xl px-8 py-4 md:px-12 md:py-6 border border-border">
                         <span className="font-display text-8xl md:text-[10rem] lg:text-[12rem] font-black text-primary leading-none">
-                          {currentMatch.scoreB}
+                          {currentSetScores.b}
                         </span>
                       </div>
                     </div>
@@ -217,7 +291,7 @@ export default function Scoreboard() {
               </div>
             </div>
 
-            {/* Match indicator for multiple matches */}
+            {/* Match indicator */}
             {displayMatches.length > 1 && (
               <div className="text-center mt-6 text-muted-foreground">
                 Match {currentMatchIndex + 1} of {displayMatches.length} • Auto-cycling
@@ -225,7 +299,6 @@ export default function Scoreboard() {
             )}
           </div>
         ) : (
-          /* No Matches State */
           <div className="text-center">
             <div className="w-32 h-32 mx-auto mb-8 rounded-full bg-muted/50 flex items-center justify-center">
               <Trophy className="h-16 w-16 text-muted-foreground" />

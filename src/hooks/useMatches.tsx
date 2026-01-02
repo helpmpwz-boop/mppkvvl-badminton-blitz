@@ -10,14 +10,24 @@ type MatchInsert = Database['public']['Tables']['matches']['Insert'];
 type MatchStatus = Database['public']['Enums']['match_status'];
 type PlayerCategory = Database['public']['Enums']['player_category'];
 
+export interface SetScores {
+  set1: { a: number; b: number };
+  set2: { a: number; b: number };
+  set3: { a: number; b: number };
+}
+
 export interface Match {
   id: string;
   playerA: Player;
-  playerA2?: Player;  // Doubles partner
+  playerA2?: Player;
   playerB: Player;
-  playerB2?: Player;  // Doubles partner
+  playerB2?: Player;
   scoreA: number;
   scoreB: number;
+  setsWonA: number;
+  setsWonB: number;
+  currentSet: number;
+  setScores: SetScores;
   status: 'UPCOMING' | 'LIVE' | 'COMPLETED';
   scheduledAt: Date;
   court: string;
@@ -58,6 +68,14 @@ const mapRowToMatch = (row: MatchWithPlayers): Match => ({
   playerB2: row.player_b2 ? mapPlayerRow(row.player_b2) : undefined,
   scoreA: row.score_a,
   scoreB: row.score_b,
+  setsWonA: row.sets_won_a,
+  setsWonB: row.sets_won_b,
+  currentSet: row.current_set,
+  setScores: {
+    set1: { a: row.set1_score_a, b: row.set1_score_b },
+    set2: { a: row.set2_score_a, b: row.set2_score_b },
+    set3: { a: row.set3_score_a, b: row.set3_score_b },
+  },
   status: row.status as Match['status'],
   scheduledAt: new Date(row.scheduled_at),
   court: row.court,
@@ -68,7 +86,6 @@ const mapRowToMatch = (row: MatchWithPlayers): Match => ({
 export function useMatches() {
   const queryClient = useQueryClient();
 
-  // Set up realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel('matches-realtime')
@@ -80,7 +97,6 @@ export function useMatches() {
           table: 'matches',
         },
         () => {
-          // Invalidate and refetch matches on any change
           queryClient.invalidateQueries({ queryKey: ['matches'] });
         }
       )
@@ -167,33 +183,86 @@ export function useAddMatch() {
   });
 }
 
-export function useUpdateScore() {
+export function useUpdateSetScore() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ matchId, playerSide }: { matchId: string; playerSide: 'A' | 'B' }) => {
-      // First get current score
+    mutationFn: async ({ 
+      matchId, 
+      playerSide, 
+      setNumber 
+    }: { 
+      matchId: string; 
+      playerSide: 'A' | 'B'; 
+      setNumber: 1 | 2 | 3;
+    }) => {
+      const scoreColumn = `set${setNumber}_score_${playerSide.toLowerCase()}` as const;
+      
+      // Get current score
       const { data: match, error: fetchError } = await supabase
         .from('matches')
-        .select('score_a, score_b')
+        .select('*')
         .eq('id', matchId)
         .single();
       
       if (fetchError) throw fetchError;
 
-      const updateData = playerSide === 'A' 
-        ? { score_a: match.score_a + 1 }
-        : { score_b: match.score_b + 1 };
-
+      const currentScore = match[scoreColumn as keyof typeof match] as number;
+      
       const { error } = await supabase
         .from('matches')
-        .update(updateData)
+        .update({ [scoreColumn]: currentScore + 1 })
         .eq('id', matchId);
       
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+}
+
+export function useEndSet() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ 
+      matchId, 
+      setWinner 
+    }: { 
+      matchId: string; 
+      setWinner: 'A' | 'B';
+    }) => {
+      const { data: match, error: fetchError } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('id', matchId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+
+      const newSetsWonA = setWinner === 'A' ? match.sets_won_a + 1 : match.sets_won_a;
+      const newSetsWonB = setWinner === 'B' ? match.sets_won_b + 1 : match.sets_won_b;
+      const newCurrentSet = Math.min(match.current_set + 1, 3);
+
+      const { error } = await supabase
+        .from('matches')
+        .update({
+          sets_won_a: newSetsWonA,
+          sets_won_b: newSetsWonB,
+          current_set: newCurrentSet,
+        })
+        .eq('id', matchId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['matches'] });
+      toast({
+        title: "Set Complete",
+        description: "Moving to the next set.",
+      });
     },
   });
 }
@@ -238,6 +307,38 @@ export function useCompleteMatch() {
         title: "Match Completed",
         description: "The match result has been recorded.",
       });
+    },
+  });
+}
+
+// Legacy hook for backward compatibility - updates current set score
+export function useUpdateScore() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ matchId, playerSide }: { matchId: string; playerSide: 'A' | 'B' }) => {
+      // Get current match to know which set we're in
+      const { data: match, error: fetchError } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('id', matchId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+
+      const currentSet = match.current_set as 1 | 2 | 3;
+      const scoreColumn = `set${currentSet}_score_${playerSide.toLowerCase()}`;
+      const currentScore = match[scoreColumn as keyof typeof match] as number;
+
+      const { error } = await supabase
+        .from('matches')
+        .update({ [scoreColumn]: currentScore + 1 })
+        .eq('id', matchId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['matches'] });
     },
   });
 }

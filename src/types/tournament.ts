@@ -20,6 +20,12 @@ export interface Player {
   registeredAt: Date;
 }
 
+export interface SetScores {
+  set1: { a: number; b: number };
+  set2: { a: number; b: number };
+  set3: { a: number; b: number };
+}
+
 export interface Match {
   id: string;
   playerA: Player;
@@ -28,6 +34,10 @@ export interface Match {
   playerB2?: Player;  // Doubles partner for side B
   scoreA: number;
   scoreB: number;
+  setsWonA: number;
+  setsWonB: number;
+  currentSet: number;
+  setScores: SetScores;
   status: MatchStatus;
   winner?: Player;
   scheduledAt: Date;

@@ -1,7 +1,8 @@
 import { Match } from '@/hooks/useMatches';
 import { Badge } from '@/components/ui/badge';
 import { LiveBadge } from './LiveBadge';
-import { User, Calendar, MapPin, Trophy, Users } from 'lucide-react';
+import { SetScoreDisplay } from './SetScoreDisplay';
+import { User, Calendar, MapPin, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -16,6 +17,18 @@ export function MatchCard({ match, showControls = false, onScoreUpdate, classNam
   const isLive = match.status === 'LIVE';
   const isCompleted = match.status === 'COMPLETED';
   const isDoubles = match.category.includes('Doubles');
+
+  const getWinnerName = () => {
+    if (!match.winner) return null;
+    if (match.winner.id === match.playerA.id) {
+      return match.playerA2 
+        ? `${match.playerA.name} & ${match.playerA2.name}`
+        : match.playerA.name;
+    }
+    return match.playerB2 
+      ? `${match.playerB.name} & ${match.playerB2.name}`
+      : match.playerB.name;
+  };
 
   return (
     <div className={cn(
@@ -35,7 +48,14 @@ export function MatchCard({ match, showControls = false, onScoreUpdate, classNam
           )}
         </div>
         <div className="flex items-center gap-2">
-          {isLive && <LiveBadge />}
+          {isLive && (
+            <>
+              <Badge variant="outline" className="text-xs bg-primary/20 text-primary border-primary/30">
+                Set {match.currentSet}
+              </Badge>
+              <LiveBadge />
+            </>
+          )}
           {isCompleted && (
             <Badge variant="success">COMPLETED</Badge>
           )}
@@ -44,6 +64,31 @@ export function MatchCard({ match, showControls = false, onScoreUpdate, classNam
           )}
         </div>
       </div>
+
+      {/* Winner Banner */}
+      {isCompleted && match.winner && (
+        <div className="px-4 py-2 bg-success/10 border-b border-success/30">
+          <div className="flex items-center justify-center gap-2">
+            <Trophy className="h-4 w-4 text-success" />
+            <span className="text-sm font-display font-bold text-success">
+              Winner: {getWinnerName()}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Set Scores */}
+      {(isLive || isCompleted) && (
+        <div className="px-4 py-3 border-b border-border bg-muted/20">
+          <SetScoreDisplay
+            setScores={match.setScores}
+            setsWonA={match.setsWonA}
+            setsWonB={match.setsWonB}
+            currentSet={match.currentSet}
+            compact
+          />
+        </div>
+      )}
 
       {/* Players and Score */}
       <div className="p-4">
@@ -103,21 +148,9 @@ export function MatchCard({ match, showControls = false, onScoreUpdate, classNam
             <p className="text-xs text-muted-foreground">{match.playerA.location}</p>
           </div>
 
-          {/* Score */}
-          <div className="flex items-center gap-4">
-            <div className={cn(
-              "text-5xl md:text-6xl font-display font-bold",
-              isLive ? "text-primary" : "text-foreground"
-            )}>
-              {match.scoreA}
-            </div>
-            <div className="text-2xl text-muted-foreground font-light">-</div>
-            <div className={cn(
-              "text-5xl md:text-6xl font-display font-bold",
-              isLive ? "text-primary" : "text-foreground"
-            )}>
-              {match.scoreB}
-            </div>
+          {/* VS Indicator */}
+          <div className="flex flex-col items-center">
+            <span className="text-2xl font-display font-bold text-muted-foreground">VS</span>
           </div>
 
           {/* Team B */}
