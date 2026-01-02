@@ -23,7 +23,9 @@ export interface Player {
 export interface Match {
   id: string;
   playerA: Player;
+  playerA2?: Player;  // Doubles partner for side A
   playerB: Player;
+  playerB2?: Player;  // Doubles partner for side B
   scoreA: number;
   scoreB: number;
   status: MatchStatus;

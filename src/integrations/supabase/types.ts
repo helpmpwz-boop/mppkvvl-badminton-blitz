@@ -21,7 +21,9 @@ export type Database = {
           created_at: string
           id: string
           player_a_id: string
+          player_a2_id: string | null
           player_b_id: string
+          player_b2_id: string | null
           scheduled_at: string
           score_a: number
           score_b: number
@@ -35,7 +37,9 @@ export type Database = {
           created_at?: string
           id?: string
           player_a_id: string
+          player_a2_id?: string | null
           player_b_id: string
+          player_b2_id?: string | null
           scheduled_at: string
           score_a?: number
           score_b?: number
@@ -49,7 +53,9 @@ export type Database = {
           created_at?: string
           id?: string
           player_a_id?: string
+          player_a2_id?: string | null
           player_b_id?: string
+          player_b2_id?: string | null
           scheduled_at?: string
           score_a?: number
           score_b?: number
@@ -66,8 +72,22 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "matches_player_a2_id_fkey"
+            columns: ["player_a2_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "matches_player_b_id_fkey"
             columns: ["player_b_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_player_b2_id_fkey"
+            columns: ["player_b2_id"]
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]

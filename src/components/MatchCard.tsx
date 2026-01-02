@@ -1,7 +1,7 @@
-import { Match } from '@/types/tournament';
+import { Match } from '@/hooks/useMatches';
 import { Badge } from '@/components/ui/badge';
 import { LiveBadge } from './LiveBadge';
-import { User, Calendar, MapPin, Trophy } from 'lucide-react';
+import { User, Calendar, MapPin, Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -15,6 +15,7 @@ interface MatchCardProps {
 export function MatchCard({ match, showControls = false, onScoreUpdate, className }: MatchCardProps) {
   const isLive = match.status === 'LIVE';
   const isCompleted = match.status === 'COMPLETED';
+  const isDoubles = match.category.includes('Doubles');
 
   return (
     <div className={cn(
@@ -47,27 +48,58 @@ export function MatchCard({ match, showControls = false, onScoreUpdate, classNam
       {/* Players and Score */}
       <div className="p-4">
         <div className="flex items-center justify-between gap-4">
-          {/* Player A */}
+          {/* Team A */}
           <div className={cn(
             "flex-1 text-center",
             isCompleted && match.winner?.id === match.playerA.id && "opacity-100",
             isCompleted && match.winner?.id !== match.playerA.id && "opacity-50"
           )}>
-            <div className="relative w-16 h-16 mx-auto rounded-full overflow-hidden bg-muted mb-2">
-              {match.playerA.photoUrl ? (
-                <img src={match.playerA.photoUrl} alt={match.playerA.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                  <User className="h-8 w-8 text-primary-foreground" />
+            {isDoubles ? (
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
+                  {match.playerA.photoUrl ? (
+                    <img src={match.playerA.photoUrl} alt={match.playerA.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                      <User className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                  )}
                 </div>
-              )}
-              {isCompleted && match.winner?.id === match.playerA.id && (
-                <div className="absolute inset-0 flex items-center justify-center bg-success/80">
-                  <Trophy className="h-6 w-6 text-white" />
-                </div>
-              )}
-            </div>
+                {match.playerA2 && (
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
+                    {match.playerA2.photoUrl ? (
+                      <img src={match.playerA2.photoUrl} alt={match.playerA2.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                        <User className="h-5 w-5 text-primary-foreground" />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {isCompleted && match.winner?.id === match.playerA.id && (
+                  <Trophy className="h-5 w-5 text-success ml-1" />
+                )}
+              </div>
+            ) : (
+              <div className="relative w-16 h-16 mx-auto rounded-full overflow-hidden bg-muted mb-2">
+                {match.playerA.photoUrl ? (
+                  <img src={match.playerA.photoUrl} alt={match.playerA.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                    <User className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                )}
+                {isCompleted && match.winner?.id === match.playerA.id && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-success/80">
+                    <Trophy className="h-6 w-6 text-white" />
+                  </div>
+                )}
+              </div>
+            )}
             <h4 className="font-display font-bold text-sm truncate">{match.playerA.name}</h4>
+            {isDoubles && match.playerA2 && (
+              <h4 className="font-display font-bold text-sm truncate text-muted-foreground">{match.playerA2.name}</h4>
+            )}
             <p className="text-xs text-muted-foreground">{match.playerA.location}</p>
           </div>
 
@@ -88,27 +120,58 @@ export function MatchCard({ match, showControls = false, onScoreUpdate, classNam
             </div>
           </div>
 
-          {/* Player B */}
+          {/* Team B */}
           <div className={cn(
             "flex-1 text-center",
             isCompleted && match.winner?.id === match.playerB.id && "opacity-100",
             isCompleted && match.winner?.id !== match.playerB.id && "opacity-50"
           )}>
-            <div className="relative w-16 h-16 mx-auto rounded-full overflow-hidden bg-muted mb-2">
-              {match.playerB.photoUrl ? (
-                <img src={match.playerB.photoUrl} alt={match.playerB.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                  <User className="h-8 w-8 text-primary-foreground" />
+            {isDoubles ? (
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
+                  {match.playerB.photoUrl ? (
+                    <img src={match.playerB.photoUrl} alt={match.playerB.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                      <User className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                  )}
                 </div>
-              )}
-              {isCompleted && match.winner?.id === match.playerB.id && (
-                <div className="absolute inset-0 flex items-center justify-center bg-success/80">
-                  <Trophy className="h-6 w-6 text-white" />
-                </div>
-              )}
-            </div>
+                {match.playerB2 && (
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
+                    {match.playerB2.photoUrl ? (
+                      <img src={match.playerB2.photoUrl} alt={match.playerB2.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                        <User className="h-5 w-5 text-primary-foreground" />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {isCompleted && match.winner?.id === match.playerB.id && (
+                  <Trophy className="h-5 w-5 text-success ml-1" />
+                )}
+              </div>
+            ) : (
+              <div className="relative w-16 h-16 mx-auto rounded-full overflow-hidden bg-muted mb-2">
+                {match.playerB.photoUrl ? (
+                  <img src={match.playerB.photoUrl} alt={match.playerB.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                    <User className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                )}
+                {isCompleted && match.winner?.id === match.playerB.id && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-success/80">
+                    <Trophy className="h-6 w-6 text-white" />
+                  </div>
+                )}
+              </div>
+            )}
             <h4 className="font-display font-bold text-sm truncate">{match.playerB.name}</h4>
+            {isDoubles && match.playerB2 && (
+              <h4 className="font-display font-bold text-sm truncate text-muted-foreground">{match.playerB2.name}</h4>
+            )}
             <p className="text-xs text-muted-foreground">{match.playerB.location}</p>
           </div>
         </div>
