@@ -327,6 +327,7 @@ export function useCompleteMatch() {
 // Legacy hook for backward compatibility - updates current set score
 export function useUpdateScore() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ matchId, playerSide }: { matchId: string; playerSide: 'A' | 'B' }) => {
@@ -352,6 +353,13 @@ export function useUpdateScore() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['matches'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Score Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 }
