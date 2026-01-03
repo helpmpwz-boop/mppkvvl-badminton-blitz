@@ -158,6 +158,7 @@ export function useAddMatch() {
         scheduled_at: scheduledAt.toISOString(),
         court,
         category,
+        status: 'UPCOMING' as MatchStatus,
       };
 
       const { error } = await supabase
