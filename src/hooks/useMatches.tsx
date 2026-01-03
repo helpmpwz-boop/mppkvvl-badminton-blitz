@@ -269,6 +269,7 @@ export function useEndSet() {
 
 export function useSetMatchStatus() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ matchId, status }: { matchId: string; status: MatchStatus }) => {
@@ -279,8 +280,19 @@ export function useSetMatchStatus() {
       
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ['matches'] });
+      toast({
+        title: status === 'LIVE' ? "Match Started" : "Status Updated",
+        description: status === 'LIVE' ? "The match is now live!" : `Match status changed to ${status}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 }
