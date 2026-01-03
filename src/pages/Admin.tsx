@@ -510,7 +510,7 @@ export default function Admin() {
               <>
                 <div className="grid gap-6 lg:grid-cols-2">
                   {[...liveMatches, ...upcomingMatches].map((match) => (
-                    <LiveScoreboard key={match.id} match={match} adminMode={isAdmin} />
+                    <LiveScoreboard key={match.id} match={match} adminMode={true} />
                   ))}
                 </div>
                 
