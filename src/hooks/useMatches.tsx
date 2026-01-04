@@ -197,23 +197,11 @@ export function useUpdateSetScore() {
       playerSide: 'A' | 'B'; 
       setNumber: 1 | 2 | 3;
     }) => {
-      const scoreColumn = `set${setNumber}_score_${playerSide.toLowerCase()}` as const;
-      
-      // Get current score
-      const { data: match, error: fetchError } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('id', matchId)
-        .single();
-      
-      if (fetchError) throw fetchError;
-
-      const currentScore = match[scoreColumn as keyof typeof match] as number;
-      
-      const { error } = await supabase
-        .from('matches')
-        .update({ [scoreColumn]: currentScore + 1 })
-        .eq('id', matchId);
+      const { error } = await supabase.rpc('increment_set_score', {
+        _match_id: matchId,
+        _set_number: setNumber,
+        _side: playerSide,
+      });
       
       if (error) throw error;
     },
@@ -324,30 +312,17 @@ export function useCompleteMatch() {
   });
 }
 
-// Legacy hook for backward compatibility - updates current set score
+// Optimized hook using database function - single round trip
 export function useUpdateScore() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ matchId, playerSide }: { matchId: string; playerSide: 'A' | 'B' }) => {
-      // Get current match to know which set we're in
-      const { data: match, error: fetchError } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('id', matchId)
-        .single();
-      
-      if (fetchError) throw fetchError;
-
-      const currentSet = match.current_set as 1 | 2 | 3;
-      const scoreColumn = `set${currentSet}_score_${playerSide.toLowerCase()}`;
-      const currentScore = match[scoreColumn as keyof typeof match] as number;
-
-      const { error } = await supabase
-        .from('matches')
-        .update({ [scoreColumn]: currentScore + 1 })
-        .eq('id', matchId);
+      const { error } = await supabase.rpc('increment_current_set_score', {
+        _match_id: matchId,
+        _side: playerSide,
+      });
       
       if (error) throw error;
     },
