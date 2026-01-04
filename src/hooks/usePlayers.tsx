@@ -45,13 +45,33 @@ export function usePlayers() {
   return useQuery({
     queryKey: ['players'],
     queryFn: async () => {
+      // Avoid fetching huge base64 photos; we only pull the fields used across the app.
       const { data, error } = await supabase
         .from('players')
-        .select('*')
+        .select(
+          [
+            'id',
+            'name',
+            'employee_number',
+            'location',
+            'designation',
+            'age',
+            'gender',
+            'category',
+            'team',
+            // 'photo_url', // intentionally omitted for performance
+            'phone',
+            'email',
+            'status',
+            'registered_at',
+            'created_at',
+            'updated_at',
+          ].join(',')
+        )
         .order('registered_at', { ascending: false });
-      
+
       if (error) throw error;
-      return (data ?? []).map(mapRowToPlayer);
+      return ((data ?? []) as unknown as PlayerRow[]).map(mapRowToPlayer);
     },
   });
 }
