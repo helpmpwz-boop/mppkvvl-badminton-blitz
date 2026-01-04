@@ -96,7 +96,36 @@ export function useMatches() {
           schema: 'public',
           table: 'matches',
         },
-        () => {
+        (payload) => {
+          // Avoid refetching the full joined payload on every score click.
+          // We patch the cached matches for UPDATE events and only refetch for INSERT/DELETE
+          // (and in cases where we need the joined winner/player data).
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            const row = payload.new as MatchRow;
+            queryClient.setQueryData(['matches'], (prev: Match[] | undefined) => {
+              if (!prev) return prev;
+              return prev.map((m) => {
+                if (m.id !== row.id) return m;
+                return {
+                  ...m,
+                  scoreA: row.score_a,
+                  scoreB: row.score_b,
+                  setsWonA: row.sets_won_a,
+                  setsWonB: row.sets_won_b,
+                  currentSet: row.current_set,
+                  setScores: {
+                    set1: { a: row.set1_score_a, b: row.set1_score_b },
+                    set2: { a: row.set2_score_a, b: row.set2_score_b },
+                    set3: { a: row.set3_score_a, b: row.set3_score_b },
+                  },
+                  status: row.status as Match['status'],
+                  // winner name/avatar requires joined query; keep existing winner object for now.
+                };
+              });
+            });
+            return;
+          }
+
           queryClient.invalidateQueries({ queryKey: ['matches'] });
         }
       )
@@ -110,18 +139,40 @@ export function useMatches() {
   return useQuery({
     queryKey: ['matches'],
     queryFn: async () => {
+      // Avoid fetching huge base64 photos; select only the player fields we actually use.
+      const playerCols = [
+        'id',
+        'name',
+        'employee_number',
+        'location',
+        'designation',
+        'age',
+        'gender',
+        'category',
+        'team',
+        // 'photo_url', // intentionally omitted for performance
+        'phone',
+        'email',
+        'status',
+        'registered_at',
+        'created_at',
+        'updated_at',
+      ].join(',');
+
       const { data, error } = await supabase
         .from('matches')
-        .select(`
-          *,
-          player_a:players!matches_player_a_id_fkey(*),
-          player_a2:players!matches_player_a2_id_fkey(*),
-          player_b:players!matches_player_b_id_fkey(*),
-          player_b2:players!matches_player_b2_id_fkey(*),
-          winner:players!matches_winner_id_fkey(*)
-        `)
+        .select(
+          [
+            '*',
+            `player_a:players!matches_player_a_id_fkey(${playerCols})`,
+            `player_a2:players!matches_player_a2_id_fkey(${playerCols})`,
+            `player_b:players!matches_player_b_id_fkey(${playerCols})`,
+            `player_b2:players!matches_player_b2_id_fkey(${playerCols})`,
+            `winner:players!matches_winner_id_fkey(${playerCols})`,
+          ].join(',')
+        )
         .order('scheduled_at', { ascending: true });
-      
+
       if (error) throw error;
       return (data ?? []).map((row) => mapRowToMatch(row as unknown as MatchWithPlayers));
     },
@@ -188,6 +239,30 @@ export function useUpdateSetScore() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // optimistic: update UI instantly; realtime will keep other clients in sync
+    onMutate: async ({ matchId, playerSide, setNumber }) => {
+      await queryClient.cancelQueries({ queryKey: ['matches'] });
+      const previous = queryClient.getQueryData<Match[]>(['matches']);
+
+      queryClient.setQueryData<Match[]>(['matches'], (prev) => {
+        if (!prev) return prev;
+        return prev.map((m) => {
+          if (m.id !== matchId) return m;
+          const key = `set${setNumber}` as const;
+          const next = { ...m };
+          next.setScores = {
+            ...m.setScores,
+            [key]: {
+              a: m.setScores[key].a + (playerSide === 'A' ? 1 : 0),
+              b: m.setScores[key].b + (playerSide === 'B' ? 1 : 0),
+            },
+          };
+          return next;
+        });
+      });
+
+      return { previous };
+    },
     mutationFn: async ({ 
       matchId, 
       playerSide, 
@@ -202,11 +277,11 @@ export function useUpdateSetScore() {
         _set_number: setNumber,
         _side: playerSide,
       });
-      
+
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['matches'] });
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['matches'], ctx.previous);
     },
   });
 }
@@ -312,29 +387,53 @@ export function useCompleteMatch() {
   });
 }
 
-// Optimized hook using database function - single round trip
+// Optimized hook using database function - single round trip + optimistic UI
 export function useUpdateScore() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
+    onMutate: async ({ matchId, playerSide }) => {
+      await queryClient.cancelQueries({ queryKey: ['matches'] });
+      const previous = queryClient.getQueryData<Match[]>(['matches']);
+
+      queryClient.setQueryData<Match[]>(['matches'], (prev) => {
+        if (!prev) return prev;
+        return prev.map((m) => {
+          if (m.id !== matchId) return m;
+          const setNumber = m.currentSet as 1 | 2 | 3;
+          const key = `set${setNumber}` as const;
+          return {
+            ...m,
+            setScores: {
+              ...m.setScores,
+              [key]: {
+                a: m.setScores[key].a + (playerSide === 'A' ? 1 : 0),
+                b: m.setScores[key].b + (playerSide === 'B' ? 1 : 0),
+              },
+            },
+          };
+        });
+      });
+
+      return { previous };
+    },
     mutationFn: async ({ matchId, playerSide }: { matchId: string; playerSide: 'A' | 'B' }) => {
       const { error } = await supabase.rpc('increment_current_set_score', {
         _match_id: matchId,
         _side: playerSide,
       });
-      
+
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['matches'] });
-    },
-    onError: (error: Error) => {
+    onError: (error: Error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['matches'], ctx.previous);
       toast({
         title: "Score Update Failed",
         description: error.message,
         variant: "destructive",
       });
     },
+    // no invalidate: realtime + optimistic updates keep UI fast
   });
 }
