@@ -155,3 +155,76 @@ export function useUpdatePlayerStatus() {
     },
   });
 }
+
+export function useUpdatePlayer() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ playerId, data }: { playerId: string; data: Partial<Omit<Player, 'id' | 'registeredAt'>> }) => {
+      const updateData: Record<string, unknown> = {};
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.employeeNumber !== undefined) updateData.employee_number = data.employeeNumber;
+      if (data.location !== undefined) updateData.location = data.location;
+      if (data.designation !== undefined) updateData.designation = data.designation;
+      if (data.age !== undefined) updateData.age = data.age;
+      if (data.gender !== undefined) updateData.gender = data.gender;
+      if (data.category !== undefined) updateData.category = data.category;
+      if (data.team !== undefined) updateData.team = data.team;
+      if (data.phone !== undefined) updateData.phone = data.phone;
+      if (data.email !== undefined) updateData.email = data.email;
+      if (data.status !== undefined) updateData.status = data.status;
+
+      const { error } = await supabase
+        .from('players')
+        .update(updateData)
+        .eq('id', playerId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      toast({
+        title: "Player Updated",
+        description: "Player details have been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeletePlayer() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (playerId: string) => {
+      const { error } = await supabase
+        .from('players')
+        .delete()
+        .eq('id', playerId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      toast({
+        title: "Player Deleted",
+        description: "Player has been removed from the tournament.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}

@@ -6,12 +6,14 @@ import { LiveScoreboard } from '@/components/LiveScoreboard';
 import { MatchCard } from '@/components/MatchCard';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { CSVUploadForm } from '@/components/admin/CSVUploadForm';
+import { EditPlayerDialog } from '@/components/admin/EditPlayerDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { usePlayers, useUpdatePlayerStatus } from '@/hooks/usePlayers';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { usePlayers, useUpdatePlayerStatus, useDeletePlayer, Player } from '@/hooks/usePlayers';
 import { useMatches, useAddMatch } from '@/hooks/useMatches';
 import { useAuth } from '@/hooks/useAuth';
 import { 
@@ -28,7 +30,9 @@ import {
   Loader2,
   Shield,
   UserCog,
-  Upload
+  Upload,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 
@@ -40,10 +44,13 @@ export default function Admin() {
   const { data: players = [], isLoading: playersLoading } = usePlayers();
   const { data: matches = [], isLoading: matchesLoading } = useMatches();
   const updatePlayerStatus = useUpdatePlayerStatus();
+  const deletePlayer = useDeletePlayer();
   const addMatch = useAddMatch();
   
   const [playerFilter, setPlayerFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'REJECTED'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [deletingPlayer, setDeletingPlayer] = useState<Player | null>(null);
   
   // New match form state
   const [selectedPlayerA, setSelectedPlayerA] = useState('');
@@ -285,23 +292,41 @@ export default function Admin() {
                   {filteredPlayers.map((player) => (
                     <div key={player.id} className="relative">
                       <PlayerCard player={player} />
-                      {player.status === 'PENDING' && isAdmin && (
+                      {isAdmin && (
                         <div className="absolute top-4 right-4 flex gap-2">
+                          {player.status === 'PENDING' && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="success"
+                                onClick={() => handleApprove(player.id)}
+                                disabled={updatePlayerStatus.isPending}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleReject(player.id)}
+                                disabled={updatePlayerStatus.isPending}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                           <Button
                             size="sm"
-                            variant="success"
-                            onClick={() => handleApprove(player.id)}
-                            disabled={updatePlayerStatus.isPending}
+                            variant="outline"
+                            onClick={() => setEditingPlayer(player)}
                           >
-                            <CheckCircle className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleReject(player.id)}
-                            disabled={updatePlayerStatus.isPending}
+                            onClick={() => setDeletingPlayer(player)}
                           >
-                            <XCircle className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       )}
@@ -545,6 +570,39 @@ export default function Admin() {
             </TabsContent>
           )}
         </Tabs>
+
+        {/* Edit Player Dialog */}
+        <EditPlayerDialog
+          player={editingPlayer}
+          open={!!editingPlayer}
+          onOpenChange={(open) => !open && setEditingPlayer(null)}
+        />
+
+        {/* Delete Player Confirmation */}
+        <AlertDialog open={!!deletingPlayer} onOpenChange={(open) => !open && setDeletingPlayer(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Player</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {deletingPlayer?.name}? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deletingPlayer) {
+                    deletePlayer.mutate(deletingPlayer.id);
+                    setDeletingPlayer(null);
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
