@@ -7,6 +7,8 @@ type PlayerRow = Database['public']['Tables']['players']['Row'];
 type PlayerInsert = Database['public']['Tables']['players']['Insert'];
 type PlayerStatus = Database['public']['Enums']['player_status'];
 
+export type CategoryType = 'Mens Singles' | 'Womens Singles' | 'Mens Doubles' | 'Womens Doubles' | 'Mixed Doubles' | 'Veteran Mens Singles' | 'Veteran Womens Singles' | 'Veteran Mens Doubles' | 'Veteran Womens Doubles' | 'Veteran Mixed Doubles';
+
 export interface Player {
   id: string;
   name: string;
@@ -15,7 +17,7 @@ export interface Player {
   designation: string;
   age: number;
   gender: 'Male' | 'Female' | 'Other';
-  category: 'Mens Singles' | 'Womens Singles' | 'Mens Doubles' | 'Womens Doubles' | 'Mixed Doubles';
+  category: CategoryType[];
   team?: string;
   photoUrl?: string;
   phone: string;
@@ -32,7 +34,7 @@ const mapRowToPlayer = (row: PlayerRow): Player => ({
   designation: row.designation,
   age: row.age,
   gender: row.gender as Player['gender'],
-  category: row.category as Player['category'],
+  category: (row.category as CategoryType[]) ?? [],
   team: row.team ?? undefined,
   photoUrl: row.photo_url ?? undefined,
   phone: row.phone,
