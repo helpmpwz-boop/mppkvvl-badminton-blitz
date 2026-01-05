@@ -131,7 +131,7 @@ export type Database = {
       players: {
         Row: {
           age: number
-          category: Database["public"]["Enums"]["player_category"]
+          category: Database["public"]["Enums"]["player_category"][]
           created_at: string
           designation: string
           email: string | null
@@ -149,7 +149,7 @@ export type Database = {
         }
         Insert: {
           age: number
-          category: Database["public"]["Enums"]["player_category"]
+          category?: Database["public"]["Enums"]["player_category"][]
           created_at?: string
           designation: string
           email?: string | null
@@ -167,7 +167,7 @@ export type Database = {
         }
         Update: {
           age?: number
-          category?: Database["public"]["Enums"]["player_category"]
+          category?: Database["public"]["Enums"]["player_category"][]
           created_at?: string
           designation?: string
           email?: string | null
@@ -320,6 +320,11 @@ export type Database = {
         | "Mens Doubles"
         | "Womens Doubles"
         | "Mixed Doubles"
+        | "Veteran Mens Singles"
+        | "Veteran Womens Singles"
+        | "Veteran Mens Doubles"
+        | "Veteran Womens Doubles"
+        | "Veteran Mixed Doubles"
       player_gender: "Male" | "Female" | "Other"
       player_status: "PENDING" | "APPROVED" | "REJECTED"
     }
@@ -457,6 +462,11 @@ export const Constants = {
         "Mens Doubles",
         "Womens Doubles",
         "Mixed Doubles",
+        "Veteran Mens Singles",
+        "Veteran Womens Singles",
+        "Veteran Mens Doubles",
+        "Veteran Womens Doubles",
+        "Veteran Mixed Doubles",
       ],
       player_gender: ["Male", "Female", "Other"],
       player_status: ["PENDING", "APPROVED", "REJECTED"],

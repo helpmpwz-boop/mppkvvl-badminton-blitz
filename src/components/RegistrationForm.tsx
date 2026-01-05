@@ -6,8 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAddPlayer } from '@/hooks/usePlayers';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useAddPlayer, CategoryType } from '@/hooks/usePlayers';
 import { User, CheckCircle, Upload, Loader2 } from 'lucide-react';
+
+const ALL_CATEGORIES: { value: CategoryType; label: string; group: 'singles' | 'doubles' | 'veteran-singles' | 'veteran-doubles' }[] = [
+  { value: 'Mens Singles', label: "Men's Singles", group: 'singles' },
+  { value: 'Womens Singles', label: "Women's Singles", group: 'singles' },
+  { value: 'Mens Doubles', label: "Men's Doubles", group: 'doubles' },
+  { value: 'Womens Doubles', label: "Women's Doubles", group: 'doubles' },
+  { value: 'Mixed Doubles', label: 'Mixed Doubles', group: 'doubles' },
+  { value: 'Veteran Mens Singles', label: "Veteran Men's Singles", group: 'veteran-singles' },
+  { value: 'Veteran Womens Singles', label: "Veteran Women's Singles", group: 'veteran-singles' },
+  { value: 'Veteran Mens Doubles', label: "Veteran Men's Doubles", group: 'veteran-doubles' },
+  { value: 'Veteran Womens Doubles', label: "Veteran Women's Doubles", group: 'veteran-doubles' },
+  { value: 'Veteran Mixed Doubles', label: 'Veteran Mixed Doubles', group: 'veteran-doubles' },
+];
 
 const registrationSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -16,7 +30,7 @@ const registrationSchema = z.object({
   designation: z.string().min(1, 'Designation is required'),
   age: z.number().min(18, 'Must be at least 18 years old').max(70, 'Must be under 70 years old'),
   gender: z.enum(['Male', 'Female', 'Other']),
-  category: z.enum(['Mens Singles', 'Womens Singles', 'Mens Doubles', 'Womens Doubles', 'Mixed Doubles']),
+  categories: z.array(z.string()).min(1, 'Select at least one category'),
   team: z.string().optional(),
   phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
@@ -24,11 +38,11 @@ const registrationSchema = z.object({
 
 type RegistrationFormData = z.infer<typeof registrationSchema>;
 type Gender = 'Male' | 'Female' | 'Other';
-type Category = 'Mens Singles' | 'Womens Singles' | 'Mens Doubles' | 'Womens Doubles' | 'Mixed Doubles';
 
 export function RegistrationForm() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<CategoryType[]>([]);
   const addPlayer = useAddPlayer();
 
   const {
@@ -41,7 +55,7 @@ export function RegistrationForm() {
     resolver: zodResolver(registrationSchema),
     defaultValues: {
       gender: 'Male',
-      category: 'Mens Singles',
+      categories: [],
     },
   });
 
@@ -56,6 +70,14 @@ export function RegistrationForm() {
     }
   };
 
+  const toggleCategory = (category: CategoryType) => {
+    const newCategories = selectedCategories.includes(category)
+      ? selectedCategories.filter(c => c !== category)
+      : [...selectedCategories, category];
+    setSelectedCategories(newCategories);
+    setValue('categories', newCategories, { shouldValidate: true });
+  };
+
   const onSubmit = async (data: RegistrationFormData) => {
     try {
       await addPlayer.mutateAsync({
@@ -65,7 +87,7 @@ export function RegistrationForm() {
         designation: data.designation,
         age: data.age,
         gender: data.gender,
-        category: data.category,
+        category: selectedCategories,
         phone: data.phone,
         photoUrl: photoPreview || undefined,
         email: data.email || undefined,
@@ -75,6 +97,7 @@ export function RegistrationForm() {
       setIsSubmitted(true);
       reset();
       setPhotoPreview(null);
+      setSelectedCategories([]);
     } catch (error) {
       // Error is handled by the mutation
     }
@@ -97,6 +120,11 @@ export function RegistrationForm() {
       </div>
     );
   }
+
+  const singlesCategories = ALL_CATEGORIES.filter(c => c.group === 'singles');
+  const doublesCategories = ALL_CATEGORIES.filter(c => c.group === 'doubles');
+  const veteranSinglesCategories = ALL_CATEGORIES.filter(c => c.group === 'veteran-singles');
+  const veteranDoublesCategories = ALL_CATEGORIES.filter(c => c.group === 'veteran-doubles');
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -199,23 +227,6 @@ export function RegistrationForm() {
           </Select>
         </div>
 
-        {/* Category */}
-        <div className="space-y-2">
-          <Label>Category *</Label>
-          <Select onValueChange={(value) => setValue('category', value as Category)} defaultValue="Mens Singles">
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Mens Singles">Men's Singles</SelectItem>
-              <SelectItem value="Womens Singles">Women's Singles</SelectItem>
-              <SelectItem value="Mens Doubles">Men's Doubles</SelectItem>
-              <SelectItem value="Womens Doubles">Women's Doubles</SelectItem>
-              <SelectItem value="Mixed Doubles">Mixed Doubles</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Team */}
         <div className="space-y-2">
           <Label htmlFor="team">Team/Department (Optional)</Label>
@@ -240,7 +251,7 @@ export function RegistrationForm() {
         </div>
 
         {/* Email */}
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <Label htmlFor="email">Email (Optional)</Label>
           <Input
             id="email"
@@ -251,6 +262,115 @@ export function RegistrationForm() {
           />
           {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
         </div>
+      </div>
+
+      {/* Categories Selection */}
+      <div className="space-y-4">
+        <Label className={errors.categories ? 'text-destructive' : ''}>
+          Select Categories * <span className="text-muted-foreground font-normal">(You can register for multiple categories)</span>
+        </Label>
+        
+        <div className="grid gap-4">
+          {/* Singles */}
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h4 className="font-medium mb-3 text-sm">Singles</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {singlesCategories.map(cat => (
+                <label 
+                  key={cat.value} 
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedCategories.includes(cat.value) 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <Checkbox 
+                    checked={selectedCategories.includes(cat.value)}
+                    onCheckedChange={() => toggleCategory(cat.value)}
+                  />
+                  <span className="text-sm">{cat.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Doubles */}
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h4 className="font-medium mb-3 text-sm">Doubles</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {doublesCategories.map(cat => (
+                <label 
+                  key={cat.value} 
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedCategories.includes(cat.value) 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <Checkbox 
+                    checked={selectedCategories.includes(cat.value)}
+                    onCheckedChange={() => toggleCategory(cat.value)}
+                  />
+                  <span className="text-sm">{cat.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Veteran Singles */}
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h4 className="font-medium mb-3 text-sm">Veteran Singles</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {veteranSinglesCategories.map(cat => (
+                <label 
+                  key={cat.value} 
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedCategories.includes(cat.value) 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <Checkbox 
+                    checked={selectedCategories.includes(cat.value)}
+                    onCheckedChange={() => toggleCategory(cat.value)}
+                  />
+                  <span className="text-sm">{cat.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Veteran Doubles */}
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h4 className="font-medium mb-3 text-sm">Veteran Doubles</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {veteranDoublesCategories.map(cat => (
+                <label 
+                  key={cat.value} 
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedCategories.includes(cat.value) 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <Checkbox 
+                    checked={selectedCategories.includes(cat.value)}
+                    onCheckedChange={() => toggleCategory(cat.value)}
+                  />
+                  <span className="text-sm">{cat.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {errors.categories && <p className="text-xs text-destructive">{errors.categories.message}</p>}
+        
+        {selectedCategories.length > 0 && (
+          <p className="text-sm text-muted-foreground">
+            Selected: {selectedCategories.length} {selectedCategories.length === 1 ? 'category' : 'categories'}
+          </p>
+        )}
       </div>
 
       <Button type="submit" size="xl" className="w-full" disabled={addPlayer.isPending}>

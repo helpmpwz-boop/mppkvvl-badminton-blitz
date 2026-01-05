@@ -1,7 +1,7 @@
 export type PlayerStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type MatchStatus = 'UPCOMING' | 'LIVE' | 'COMPLETED';
 export type Gender = 'Male' | 'Female' | 'Other';
-export type Category = 'Mens Singles' | 'Womens Singles' | 'Mens Doubles' | 'Womens Doubles' | 'Mixed Doubles';
+export type Category = 'Mens Singles' | 'Womens Singles' | 'Mens Doubles' | 'Womens Doubles' | 'Mixed Doubles' | 'Veteran Mens Singles' | 'Veteran Womens Singles' | 'Veteran Mens Doubles' | 'Veteran Womens Doubles' | 'Veteran Mixed Doubles';
 
 export interface Player {
   id: string;
@@ -11,7 +11,7 @@ export interface Player {
   designation: string;
   age: number;
   gender: Gender;
-  category: Category;
+  category: Category[];
   team?: string;
   photoUrl?: string;
   phone: string;
