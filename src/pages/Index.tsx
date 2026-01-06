@@ -38,7 +38,7 @@ const Index = () => {
               <span className="text-gradient">MPPKVVCL INDORE</span>
             </h1>
             <p className="font-display text-2xl md:text-3xl font-semibold text-muted-foreground mb-6">
-              BADMINTON TOURNAMENT 2024
+              BADMINTON TOURNAMENT 2026
             </p>
             <div className="flex items-center justify-center gap-6 text-sm">
               <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ const Index = () => {
       <footer className="border-t border-border mt-12">
         <div className="container mx-auto px-4 py-6">
           <p className="text-center text-sm text-muted-foreground">
-            © 2024 MPPKVVCL INDORE Badminton Tournament. All rights reserved.
+            © 2026 MPPKVVCL INDORE Badminton Tournament. All rights reserved.
           </p>
         </div>
       </footer>
