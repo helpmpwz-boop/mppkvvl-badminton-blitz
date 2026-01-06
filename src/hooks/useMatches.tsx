@@ -437,3 +437,75 @@ export function useUpdateScore() {
     // no invalidate: realtime + optimistic updates keep UI fast
   });
 }
+
+// Decrement score hook for correcting mistakes
+export function useDecrementScore() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    onMutate: async ({ matchId, playerSide }) => {
+      await queryClient.cancelQueries({ queryKey: ['matches'] });
+      const previous = queryClient.getQueryData<Match[]>(['matches']);
+
+      queryClient.setQueryData<Match[]>(['matches'], (prev) => {
+        if (!prev) return prev;
+        return prev.map((m) => {
+          if (m.id !== matchId) return m;
+          const setNumber = m.currentSet as 1 | 2 | 3;
+          const key = `set${setNumber}` as const;
+          const currentScore = playerSide === 'A' ? m.setScores[key].a : m.setScores[key].b;
+          if (currentScore <= 0) return m; // Don't go below 0
+          return {
+            ...m,
+            setScores: {
+              ...m.setScores,
+              [key]: {
+                a: m.setScores[key].a - (playerSide === 'A' ? 1 : 0),
+                b: m.setScores[key].b - (playerSide === 'B' ? 1 : 0),
+              },
+            },
+          };
+        });
+      });
+
+      return { previous };
+    },
+    mutationFn: async ({ matchId, playerSide }: { matchId: string; playerSide: 'A' | 'B' }) => {
+      // Fetch current match to get current set and score
+      const { data: match, error: fetchError } = await supabase
+        .from('matches')
+        .select('current_set, set1_score_a, set1_score_b, set2_score_a, set2_score_b, set3_score_a, set3_score_b')
+        .eq('id', matchId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const setNumber = match.current_set;
+      const scoreField = `set${setNumber}_score_${playerSide.toLowerCase()}` as keyof typeof match;
+      const currentScore = match[scoreField] as number;
+
+      if (currentScore <= 0) {
+        throw new Error('Score cannot go below 0');
+      }
+
+      const updateData: Record<string, number> = {};
+      updateData[scoreField as string] = currentScore - 1;
+
+      const { error } = await supabase
+        .from('matches')
+        .update(updateData)
+        .eq('id', matchId);
+
+      if (error) throw error;
+    },
+    onError: (error: Error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['matches'], ctx.previous);
+      toast({
+        title: "Score Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}

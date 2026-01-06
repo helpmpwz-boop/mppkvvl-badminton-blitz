@@ -1,8 +1,8 @@
-import { Match, useUpdateScore, useSetMatchStatus, useCompleteMatch, useEndSet } from '@/hooks/useMatches';
+import { Match, useUpdateScore, useDecrementScore, useSetMatchStatus, useCompleteMatch, useEndSet } from '@/hooks/useMatches';
 import { Button } from '@/components/ui/button';
 import { LiveBadge } from './LiveBadge';
 import { SetScoreDisplay } from './SetScoreDisplay';
-import { User, Plus, Trophy, Flag, ChevronRight } from 'lucide-react';
+import { User, Plus, Minus, Trophy, Flag, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -13,6 +13,7 @@ interface LiveScoreboardProps {
 
 export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps) {
   const updateScore = useUpdateScore();
+  const decrementScore = useDecrementScore();
   const setMatchStatus = useSetMatchStatus();
   const completeMatch = useCompleteMatch();
   const endSet = useEndSet();
@@ -28,6 +29,10 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
       setAnimateB(true);
       setTimeout(() => setAnimateB(false), 300);
     }
+  };
+
+  const handleDecrement = (player: 'A' | 'B') => {
+    decrementScore.mutate({ matchId: match.id, playerSide: player });
   };
 
   const handleStartMatch = () => {
@@ -155,6 +160,15 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
             {/* Admin Controls */}
             {adminMode && match.status === 'LIVE' && (
               <div className="mt-6 flex items-center justify-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  onClick={() => handleDecrement('A')} 
+                  disabled={decrementScore.isPending || currentSetScores.a <= 0}
+                  className="rounded-full w-12 h-12"
+                >
+                  <Minus className="h-5 w-5" />
+                </Button>
                 <Button variant="score" size="lg" onClick={() => handleScore('A')} disabled={updateScore.isPending}>
                   <Plus className="h-6 w-6" />
                 </Button>
@@ -204,6 +218,15 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
             {/* Admin Controls */}
             {adminMode && match.status === 'LIVE' && (
               <div className="mt-6 flex items-center justify-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  onClick={() => handleDecrement('B')} 
+                  disabled={decrementScore.isPending || currentSetScores.b <= 0}
+                  className="rounded-full w-12 h-12"
+                >
+                  <Minus className="h-5 w-5" />
+                </Button>
                 <Button variant="score" size="lg" onClick={() => handleScore('B')} disabled={updateScore.isPending}>
                   <Plus className="h-6 w-6" />
                 </Button>
