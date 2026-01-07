@@ -19,7 +19,7 @@ export default function Register() {
               Register for the Tournament
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Join the MPPKVVCL INDORE Badminton Tournament 2026. Fill in your details below to register as a participant.
+              Join the MPPKVVCL INDORE Badminton Tournament 2024. Fill in your details below to register as a participant.
             </p>
           </div>
 

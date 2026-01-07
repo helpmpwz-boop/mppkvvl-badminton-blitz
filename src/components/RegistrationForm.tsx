@@ -129,7 +129,7 @@ export function RegistrationForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Photo Upload */}
-      {/* <div className="flex justify-center">
+      <div className="flex justify-center">
         <label className="cursor-pointer group">
           <div className="relative w-28 h-28 rounded-full overflow-hidden bg-muted border-4 border-dashed border-border group-hover:border-primary transition-colors">
             {photoPreview ? (
@@ -148,7 +148,7 @@ export function RegistrationForm() {
             className="hidden"
           />
         </label>
-      </div> */}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Name */}
