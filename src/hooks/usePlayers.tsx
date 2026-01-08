@@ -98,14 +98,11 @@ export function useAddPlayer() {
         email: player.email,
       };
 
-      const { data, error } = await supabase
-        .from('players')
-        .insert(insert)
-        .select()
-        .single();
-      
+      // Public registration is allowed to INSERT, but NOT allowed to SELECT pending rows.
+      // So we must not request a returning representation here.
+      const { error } = await supabase.from('players').insert(insert);
+
       if (error) throw error;
-      return mapRowToPlayer(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['players'] });
