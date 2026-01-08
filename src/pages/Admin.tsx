@@ -373,6 +373,11 @@ export default function Admin() {
                         <SelectItem value="Mens Doubles">Men's Doubles</SelectItem>
                         <SelectItem value="Womens Doubles">Women's Doubles</SelectItem>
                         <SelectItem value="Mixed Doubles">Mixed Doubles</SelectItem>
+                        <SelectItem value="Veteran Mens Singles">Veteran Men's Singles</SelectItem>
+                        <SelectItem value="Veteran Womens Singles">Veteran Women's Singles</SelectItem>
+                        <SelectItem value="Veteran Mens Doubles">Veteran Men's Doubles</SelectItem>
+                        <SelectItem value="Veteran Womens Doubles">Veteran Women's Doubles</SelectItem>
+                        <SelectItem value="Veteran Mixed Doubles">Veteran Mixed Doubles</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
