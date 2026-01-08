@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAddPlayer, CategoryType } from '@/hooks/usePlayers';
-import { User, CheckCircle, Upload, Loader2 } from 'lucide-react';
+import { User, CheckCircle, Loader2 } from 'lucide-react';
 
 const ALL_CATEGORIES: { value: CategoryType; label: string; group: 'singles' | 'doubles' | 'veteran-singles' | 'veteran-doubles' }[] = [
   { value: 'Mens Singles', label: "Men's Singles", group: 'singles' },
@@ -40,7 +40,6 @@ type RegistrationFormData = z.infer<typeof registrationSchema>;
 type Gender = 'Male' | 'Female' | 'Other';
 
 export function RegistrationForm() {
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<CategoryType[]>([]);
   const addPlayer = useAddPlayer();
@@ -58,17 +57,6 @@ export function RegistrationForm() {
       categories: [],
     },
   });
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const toggleCategory = (category: CategoryType) => {
     const newCategories = selectedCategories.includes(category)
@@ -89,14 +77,13 @@ export function RegistrationForm() {
         gender: data.gender,
         category: selectedCategories,
         phone: data.phone,
-        photoUrl: photoPreview || undefined,
+        
         email: data.email || undefined,
         team: data.team || undefined,
       });
       
       setIsSubmitted(true);
       reset();
-      setPhotoPreview(null);
       setSelectedCategories([]);
     } catch (error) {
       // Error is handled by the mutation
@@ -128,28 +115,6 @@ export function RegistrationForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Photo Upload */}
-      <div className="flex justify-center">
-        <label className="cursor-pointer group">
-          <div className="relative w-28 h-28 rounded-full overflow-hidden bg-muted border-4 border-dashed border-border group-hover:border-primary transition-colors">
-            {photoPreview ? (
-              <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                <Upload className="h-8 w-8 mb-1" />
-                <span className="text-xs">Upload Photo</span>
-              </div>
-            )}
-          </div>
-          <input
-            type="file"
-            accept="image/jpeg,image/png"
-            onChange={handlePhotoChange}
-            className="hidden"
-          />
-        </label>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Name */}
         <div className="space-y-2">
