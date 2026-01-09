@@ -32,8 +32,10 @@ import {
   UserCog,
   Upload,
   Pencil,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
+import { downloadPlayersExcel, downloadWinnersExcel, getUniqueTeams } from '@/utils/excelExport';
 import { Database } from '@/integrations/supabase/types';
 
 type PlayerCategory = Database['public']['Enums']['player_category'];
@@ -60,7 +62,13 @@ export default function Admin() {
   const [matchCourt, setMatchCourt] = useState('');
   const [matchCategory, setMatchCategory] = useState<PlayerCategory>('Mens Singles');
 
+  // Winners export filters
+  const [winnersCategoryFilter, setWinnersCategoryFilter] = useState<'all' | 'singles' | 'doubles'>('all');
+  const [winnersTeamFilter, setWinnersTeamFilter] = useState('');
+
   const isDoublesCategory = matchCategory.includes('Doubles');
+  const uniqueTeams = getUniqueTeams(players);
+  const completedMatches = matches.filter(m => m.status === 'COMPLETED');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -231,6 +239,10 @@ export default function Admin() {
             </TabsTrigger>
             {isAdmin && (
               <>
+                <TabsTrigger value="reports" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Reports
+                </TabsTrigger>
                 <TabsTrigger value="users" className="gap-2">
                   <UserCog className="h-4 w-4" />
                   Users
@@ -256,7 +268,7 @@ export default function Admin() {
                   className="pl-10"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   variant={playerFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
@@ -278,6 +290,16 @@ export default function Admin() {
                 >
                   Approved
                 </Button>
+                {isAdmin && filteredPlayers.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => downloadPlayersExcel(filteredPlayers, `players_${playerFilter}`)}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Export Excel
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -554,6 +576,104 @@ export default function Admin() {
               </>
             )}
           </TabsContent>
+
+          {/* Reports Tab - Admin Only */}
+          {isAdmin && (
+            <TabsContent value="reports" className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Players Export Card */}
+                <div className="bg-gradient-card rounded-xl border border-border p-6">
+                  <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    Export Player List
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Download all registered players as an Excel file.
+                  </p>
+                  <div className="space-y-3">
+                    <Button 
+                      className="w-full" 
+                      onClick={() => downloadPlayersExcel(players.filter(p => p.status === 'APPROVED'), 'approved_players')}
+                      disabled={approvedPlayers.length === 0}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Approved Players ({approvedPlayers.length})
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="w-full" 
+                      onClick={() => downloadPlayersExcel(players, 'all_players')}
+                      disabled={players.length === 0}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download All Players ({players.length})
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Winners Export Card */}
+                <div className="bg-gradient-card rounded-xl border border-border p-6">
+                  <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-primary" />
+                    Export Winners List
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Download match winners filtered by category and team.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Category Filter</Label>
+                      <Select value={winnersCategoryFilter} onValueChange={(v) => setWinnersCategoryFilter(v as 'all' | 'singles' | 'doubles')}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          <SelectItem value="singles">Singles Only</SelectItem>
+                          <SelectItem value="doubles">Doubles Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Team Filter (Optional)</Label>
+                      <Select value={winnersTeamFilter} onValueChange={setWinnersTeamFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Teams" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Teams</SelectItem>
+                          {uniqueTeams.map((team) => (
+                            <SelectItem key={team} value={team}>
+                              {team}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button 
+                      className="w-full" 
+                      onClick={() => {
+                        const result = downloadWinnersExcel(matches, {
+                          categoryFilter: winnersCategoryFilter,
+                          teamFilter: winnersTeamFilter === 'all' ? undefined : winnersTeamFilter,
+                        });
+                        if (!result) {
+                          alert('No winners found with the selected filters.');
+                        }
+                      }}
+                      disabled={completedMatches.length === 0}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Winners ({completedMatches.length} matches)
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          )}
 
           {/* User Management Tab - Admin Only */}
           {isAdmin && (
