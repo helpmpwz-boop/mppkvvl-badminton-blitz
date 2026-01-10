@@ -1,12 +1,15 @@
 import { TournamentHeader } from '@/components/TournamentHeader';
 import { MatchCard } from '@/components/MatchCard';
 import { LiveScoreboard } from '@/components/LiveScoreboard';
+import { ViewerCount } from '@/components/ViewerCount';
 import { useMatches } from '@/hooks/useMatches';
+import { useLiveViewers } from '@/hooks/useLiveViewers';
 import { Flame, Clock, Trophy, Zap, Loader2 } from 'lucide-react';
 import heroBanner from '@/assets/hero-banner.jpg';
 
 const Index = () => {
   const { data: matches = [], isLoading } = useMatches();
+  const { viewerCount } = useLiveViewers();
   
   const liveMatches = matches.filter(m => m.status === 'LIVE');
   const upcomingMatches = matches.filter(m => m.status === 'UPCOMING');
@@ -40,7 +43,8 @@ const Index = () => {
             <p className="font-display text-2xl md:text-3xl font-semibold text-muted-foreground mb-6">
               BADMINTON TOURNAMENT 2026
             </p>
-            <div className="flex items-center justify-center gap-6 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm">
+              <ViewerCount count={viewerCount} size="sm" />
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-live animate-pulse" />
                 <span>{liveMatches.length} Live</span>

@@ -1,6 +1,8 @@
 import { useMatches } from '@/hooks/useMatches';
+import { useLiveViewers } from '@/hooks/useLiveViewers';
 import { LiveBadge } from '@/components/LiveBadge';
 import { SetScoreDisplay } from '@/components/SetScoreDisplay';
+import { ViewerCount } from '@/components/ViewerCount';
 import { Link } from 'react-router-dom';
 import { Trophy, User, Clock, Maximize2, Minimize2, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 export default function Scoreboard() {
   const { data: matches = [] } = useMatches();
+  const { viewerCount } = useLiveViewers('scoreboard-viewers');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   
@@ -92,6 +95,7 @@ export default function Scoreboard() {
         </div>
         
         <div className="flex items-center gap-4">
+          <ViewerCount count={viewerCount} size="sm" />
           {displayMatches.length > 1 && (
             <div className="flex gap-1">
               {displayMatches.map((_, idx) => (
