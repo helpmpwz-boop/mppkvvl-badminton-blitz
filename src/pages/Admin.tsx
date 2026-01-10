@@ -7,6 +7,7 @@ import { MatchCard } from '@/components/MatchCard';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { CSVUploadForm } from '@/components/admin/CSVUploadForm';
 import { EditPlayerDialog } from '@/components/admin/EditPlayerDialog';
+import { PlayerCombobox } from '@/components/admin/PlayerCombobox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -442,36 +443,24 @@ export default function Admin() {
                     <h4 className="font-semibold text-sm text-primary">Team A</h4>
                     <div className="space-y-2">
                       <Label>Player A1</Label>
-                      <Select value={selectedPlayerA} onValueChange={setSelectedPlayerA}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select player" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {approvedPlayers.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              {player.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <PlayerCombobox
+                        players={approvedPlayers}
+                        value={selectedPlayerA}
+                        onValueChange={setSelectedPlayerA}
+                        placeholder="Search & select player"
+                        excludeIds={[selectedPlayerB, selectedPlayerB2].filter(Boolean)}
+                      />
                     </div>
                     {isDoublesCategory && (
                       <div className="space-y-2">
                         <Label>Player A2 (Partner)</Label>
-                        <Select value={selectedPlayerA2} onValueChange={setSelectedPlayerA2}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select partner" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {approvedPlayers
-                              .filter(p => p.id !== selectedPlayerA && p.id !== selectedPlayerB && p.id !== selectedPlayerB2)
-                              .map((player) => (
-                                <SelectItem key={player.id} value={player.id}>
-                                  {player.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                        <PlayerCombobox
+                          players={approvedPlayers}
+                          value={selectedPlayerA2}
+                          onValueChange={setSelectedPlayerA2}
+                          placeholder="Search & select partner"
+                          excludeIds={[selectedPlayerA, selectedPlayerB, selectedPlayerB2].filter(Boolean)}
+                        />
                       </div>
                     )}
                   </div>
@@ -481,38 +470,24 @@ export default function Admin() {
                     <h4 className="font-semibold text-sm text-destructive">Team B</h4>
                     <div className="space-y-2">
                       <Label>Player B1</Label>
-                      <Select value={selectedPlayerB} onValueChange={setSelectedPlayerB}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select player" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {approvedPlayers
-                            .filter(p => p.id !== selectedPlayerA && p.id !== selectedPlayerA2)
-                            .map((player) => (
-                              <SelectItem key={player.id} value={player.id}>
-                                {player.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                      <PlayerCombobox
+                        players={approvedPlayers}
+                        value={selectedPlayerB}
+                        onValueChange={setSelectedPlayerB}
+                        placeholder="Search & select player"
+                        excludeIds={[selectedPlayerA, selectedPlayerA2].filter(Boolean)}
+                      />
                     </div>
                     {isDoublesCategory && (
                       <div className="space-y-2">
                         <Label>Player B2 (Partner)</Label>
-                        <Select value={selectedPlayerB2} onValueChange={setSelectedPlayerB2}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select partner" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {approvedPlayers
-                              .filter(p => p.id !== selectedPlayerA && p.id !== selectedPlayerA2 && p.id !== selectedPlayerB)
-                              .map((player) => (
-                                <SelectItem key={player.id} value={player.id}>
-                                  {player.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                        <PlayerCombobox
+                          players={approvedPlayers}
+                          value={selectedPlayerB2}
+                          onValueChange={setSelectedPlayerB2}
+                          placeholder="Search & select partner"
+                          excludeIds={[selectedPlayerA, selectedPlayerA2, selectedPlayerB].filter(Boolean)}
+                        />
                       </div>
                     )}
                   </div>
