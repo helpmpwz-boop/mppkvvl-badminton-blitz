@@ -171,7 +171,7 @@ serve(async (req) => {
       designation: player.designation,
       age: parseInt(player.age) || 25,
       gender: mapGender(player.gender),
-      category: mapCategory(player.category),
+      category: [mapCategory(player.category)], // category is an array type in the database
       team: player.team || null,
       phone: player.phone,
       email: player.email || null,
