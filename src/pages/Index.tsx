@@ -13,7 +13,9 @@ const Index = () => {
   
   const liveMatches = matches.filter(m => m.status === 'LIVE');
   const upcomingMatches = matches.filter(m => m.status === 'UPCOMING');
-  const completedMatches = matches.filter(m => m.status === 'COMPLETED');
+  const completedMatches = matches
+    .filter(m => m.status === 'COMPLETED')
+    .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
 
   return (
     <div className="min-h-screen">
