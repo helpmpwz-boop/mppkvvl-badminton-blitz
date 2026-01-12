@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { usePlayers, useUpdatePlayerStatus, useDeletePlayer, Player } from '@/hooks/usePlayers';
-import { useMatches, useAddMatch } from '@/hooks/useMatches';
+import { useMatches, useAddMatch, useDeleteMatch } from '@/hooks/useMatches';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Users, 
@@ -49,11 +49,13 @@ export default function Admin() {
   const updatePlayerStatus = useUpdatePlayerStatus();
   const deletePlayer = useDeletePlayer();
   const addMatch = useAddMatch();
+  const deleteMatch = useDeleteMatch();
   
   const [playerFilter, setPlayerFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'REJECTED'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [deletingPlayer, setDeletingPlayer] = useState<Player | null>(null);
+  const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
   
   // New match form state
   const [selectedPlayerA, setSelectedPlayerA] = useState('');
@@ -505,7 +507,19 @@ export default function Admin() {
                   <h3 className="font-display text-lg font-bold mb-4">Upcoming Matches</h3>
                   <div className="space-y-4">
                     {upcomingMatches.map((match) => (
-                      <MatchCard key={match.id} match={match} />
+                      <div key={match.id} className="relative">
+                        <MatchCard match={match} />
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-4 right-4"
+                            onClick={() => setDeletingMatchId(match.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     ))}
                     {upcomingMatches.length === 0 && (
                       <p className="text-center py-8 text-muted-foreground">No upcoming matches</p>
@@ -513,13 +527,25 @@ export default function Admin() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-bold mb-4">Live Matches</h3>
+                  <h3 className="font-display text-lg font-bold mb-4">Completed Matches</h3>
                   <div className="space-y-4">
-                    {liveMatches.map((match) => (
-                      <MatchCard key={match.id} match={match} />
+                    {completedMatches.map((match) => (
+                      <div key={match.id} className="relative">
+                        <MatchCard match={match} />
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-4 right-4"
+                            onClick={() => setDeletingMatchId(match.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     ))}
-                    {liveMatches.length === 0 && (
-                      <p className="text-center py-8 text-muted-foreground">No live matches</p>
+                    {completedMatches.length === 0 && (
+                      <p className="text-center py-8 text-muted-foreground">No completed matches</p>
                     )}
                   </div>
                 </div>
@@ -694,6 +720,32 @@ export default function Admin() {
                   if (deletingPlayer) {
                     deletePlayer.mutate(deletingPlayer.id);
                     setDeletingPlayer(null);
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Match Confirmation */}
+        <AlertDialog open={!!deletingMatchId} onOpenChange={(open) => !open && setDeletingMatchId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Match</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this match? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deletingMatchId) {
+                    deleteMatch.mutate(deletingMatchId);
+                    setDeletingMatchId(null);
                   }
                 }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
