@@ -2,9 +2,10 @@ import { Match, useUpdateScore, useDecrementScore, useSetMatchStatus, useComplet
 import { Button } from '@/components/ui/button';
 import { LiveBadge } from './LiveBadge';
 import { SetScoreDisplay } from './SetScoreDisplay';
+import { Celebration } from './Celebration';
 import { User, Plus, Minus, Trophy, Flag, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 interface LiveScoreboardProps {
   match: Match;
@@ -19,6 +20,11 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
   const endSet = useEndSet();
   const [animateA, setAnimateA] = useState(false);
   const [animateB, setAnimateB] = useState(false);
+  const [celebration, setCelebration] = useState<{ show: boolean; winnerName: string; type: 'set' | 'match' }>({
+    show: false,
+    winnerName: '',
+    type: 'set'
+  });
 
   const handleScore = (player: 'A' | 'B') => {
     updateScore.mutate({ matchId: match.id, playerSide: player });
@@ -39,13 +45,33 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
     setMatchStatus.mutate({ matchId: match.id, status: 'LIVE' });
   };
 
+  // Helper to get player/team name
+  const getTeamName = useCallback((side: 'A' | 'B') => {
+    if (side === 'A') {
+      return match.playerA2 
+        ? `${match.playerA.name} & ${match.playerA2.name}`
+        : match.playerA.name;
+    }
+    return match.playerB2 
+      ? `${match.playerB.name} & ${match.playerB2.name}`
+      : match.playerB.name;
+  }, [match.playerA, match.playerA2, match.playerB, match.playerB2]);
+
   const handleEndSet = (winner: 'A' | 'B') => {
+    const winnerName = getTeamName(winner);
+    setCelebration({ show: true, winnerName, type: 'set' });
     endSet.mutate({ matchId: match.id, setWinner: winner });
   };
 
   const handleEndMatch = (winnerId: string) => {
+    const winnerName = winnerId === match.playerA.id ? getTeamName('A') : getTeamName('B');
+    setCelebration({ show: true, winnerName, type: 'match' });
     completeMatch.mutate({ matchId: match.id, winnerId });
   };
+
+  const handleCelebrationComplete = useCallback(() => {
+    setCelebration({ show: false, winnerName: '', type: 'set' });
+  }, []);
 
   // Get current set scores
   const currentSetScores = match.currentSet === 1 
@@ -68,7 +94,16 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
   };
 
   return (
-    <div className="bg-gradient-card rounded-3xl border border-border overflow-hidden card-shadow">
+    <>
+      {/* Celebration Effect */}
+      <Celebration
+        show={celebration.show}
+        winnerName={celebration.winnerName}
+        type={celebration.type}
+        onComplete={handleCelebrationComplete}
+      />
+      
+      <div className="bg-gradient-card rounded-3xl border border-border overflow-hidden card-shadow">
       {/* Header */}
       <div className="bg-muted/50 px-6 py-4 border-b border-border">
         <div className="flex items-center justify-between">
@@ -302,6 +337,7 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
           )}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
