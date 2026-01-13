@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 interface CelebrationProps {
   show: boolean;
@@ -75,11 +76,18 @@ export function Celebration({ show, winnerName, type, onComplete }: CelebrationP
   const [particles, setParticles] = useState<{ id: number; left: number; delay: number; color: string; size: number }[]>([]);
   const [crackers, setCrackers] = useState<{ id: number; x: number; y: number; delay: number }[]>([]);
   const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; delay: number; size: number }[]>([]);
+  const { playSetWinSound, playMatchWinSound } = useSoundEffects();
 
   useEffect(() => {
     if (show) {
       setVisible(true);
       
+      // Play celebration sound
+      if (type === 'match') {
+        playMatchWinSound();
+      } else {
+        playSetWinSound();
+      }
       // Generate confetti particles
       const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#9B59B6', '#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#1ABC9C', '#E91E63'];
       const newParticles = [...Array(80)].map((_, i) => ({
