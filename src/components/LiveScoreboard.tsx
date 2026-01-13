@@ -6,6 +6,7 @@ import { User, Plus, Minus, Trophy, Flag, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useCallback } from 'react';
 import { useCelebration } from '@/hooks/useCelebration';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 interface LiveScoreboardProps {
   match: Match;
@@ -19,10 +20,12 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
   const completeMatch = useCompleteMatch();
   const endSet = useEndSet();
   const { triggerCelebration } = useCelebration();
+  const { playScoreSound, playDecrementSound, playStartSound } = useSoundEffects();
   const [animateA, setAnimateA] = useState(false);
   const [animateB, setAnimateB] = useState(false);
 
   const handleScore = (player: 'A' | 'B') => {
+    playScoreSound();
     updateScore.mutate({ matchId: match.id, playerSide: player });
     if (player === 'A') {
       setAnimateA(true);
@@ -34,10 +37,12 @@ export function LiveScoreboard({ match, adminMode = false }: LiveScoreboardProps
   };
 
   const handleDecrement = (player: 'A' | 'B') => {
+    playDecrementSound();
     decrementScore.mutate({ matchId: match.id, playerSide: player });
   };
 
   const handleStartMatch = () => {
+    playStartSound();
     setMatchStatus.mutate({ matchId: match.id, status: 'LIVE' });
   };
 
