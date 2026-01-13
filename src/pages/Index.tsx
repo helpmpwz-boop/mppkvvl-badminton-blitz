@@ -2,14 +2,17 @@ import { TournamentHeader } from '@/components/TournamentHeader';
 import { MatchCard } from '@/components/MatchCard';
 import { LiveScoreboard } from '@/components/LiveScoreboard';
 import { ViewerCount } from '@/components/ViewerCount';
+import { Celebration } from '@/components/Celebration';
 import { useMatches } from '@/hooks/useMatches';
 import { useLiveViewers } from '@/hooks/useLiveViewers';
+import { useCelebration } from '@/hooks/useCelebration';
 import { Flame, Clock, Trophy, Zap, Loader2 } from 'lucide-react';
 import heroBanner from '@/assets/hero-banner.jpg';
 
 const Index = () => {
   const { data: matches = [], isLoading } = useMatches();
   const { viewerCount } = useLiveViewers();
+  const { celebration, clearCelebration } = useCelebration();
   
   const liveMatches = matches.filter(m => m.status === 'LIVE');
   const upcomingMatches = matches.filter(m => m.status === 'UPCOMING');
@@ -18,8 +21,17 @@ const Index = () => {
     .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
 
   return (
-    <div className="min-h-screen">
-      <TournamentHeader />
+    <>
+      {/* Celebration Effect for all viewers */}
+      <Celebration
+        show={celebration.show}
+        winnerName={celebration.winnerName}
+        type={celebration.type}
+        onComplete={clearCelebration}
+      />
+      
+      <div className="min-h-screen">
+        <TournamentHeader />
       
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-border">
@@ -156,7 +168,8 @@ const Index = () => {
           </p>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 };
 

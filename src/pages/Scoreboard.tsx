@@ -1,8 +1,10 @@
 import { useMatches } from '@/hooks/useMatches';
 import { useLiveViewers } from '@/hooks/useLiveViewers';
+import { useCelebration } from '@/hooks/useCelebration';
 import { LiveBadge } from '@/components/LiveBadge';
 import { SetScoreDisplay } from '@/components/SetScoreDisplay';
 import { ViewerCount } from '@/components/ViewerCount';
+import { Celebration } from '@/components/Celebration';
 import { Link } from 'react-router-dom';
 import { Trophy, User, Clock, Maximize2, Minimize2, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +14,7 @@ import { cn } from '@/lib/utils';
 export default function Scoreboard() {
   const { data: matches = [] } = useMatches();
   const { viewerCount } = useLiveViewers('scoreboard-viewers');
+  const { celebration, clearCelebration } = useCelebration();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   
@@ -73,7 +76,16 @@ export default function Scoreboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <>
+      {/* Celebration Effect for all viewers */}
+      <Celebration
+        show={celebration.show}
+        winnerName={celebration.winnerName}
+        type={celebration.type}
+        onComplete={clearCelebration}
+      />
+      
+      <div className="min-h-screen bg-background flex flex-col">
       {/* Header Bar */}
       <header className="bg-card/80 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -334,5 +346,6 @@ export default function Scoreboard() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
