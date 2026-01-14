@@ -6,6 +6,7 @@ import { LiveScoreboard } from '@/components/LiveScoreboard';
 import { MatchCard } from '@/components/MatchCard';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { CSVUploadForm } from '@/components/admin/CSVUploadForm';
+import { ManageWinnersTab } from '@/components/admin/ManageWinnersTab';
 import { EditPlayerDialog } from '@/components/admin/EditPlayerDialog';
 import { PlayerCombobox } from '@/components/admin/PlayerCombobox';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import {
   Plus,
   Calendar,
   Trophy,
+  Crown,
   Search,
   LogOut,
   Loader2,
@@ -242,6 +244,10 @@ export default function Admin() {
             </TabsTrigger>
             {isAdmin && (
               <>
+                <TabsTrigger value="winners" className="gap-2">
+                  <Crown className="h-4 w-4" />
+                  Winners
+                </TabsTrigger>
                 <TabsTrigger value="reports" className="gap-2">
                   <Download className="h-4 w-4" />
                   Reports
@@ -673,6 +679,13 @@ export default function Admin() {
                   </div>
                 </div>
               </div>
+            </TabsContent>
+          )}
+
+          {/* Winners Management Tab - Admin Only */}
+          {isAdmin && (
+            <TabsContent value="winners" className="space-y-6">
+              <ManageWinnersTab />
             </TabsContent>
           )}
 

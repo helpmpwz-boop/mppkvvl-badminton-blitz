@@ -3,12 +3,12 @@ import { MatchCard } from '@/components/MatchCard';
 import { LiveScoreboard } from '@/components/LiveScoreboard';
 import { ViewerCount } from '@/components/ViewerCount';
 import { Celebration } from '@/components/Celebration';
+import { WinnersShowcase } from '@/components/WinnersShowcase';
 import { useMatches } from '@/hooks/useMatches';
 import { useLiveViewers } from '@/hooks/useLiveViewers';
 import { useCelebration } from '@/hooks/useCelebration';
 import { Flame, Clock, Trophy, Zap, Loader2 } from 'lucide-react';
 import heroBanner from '@/assets/hero-banner.jpg';
-
 const Index = () => {
   const { data: matches = [], isLoading } = useMatches();
   const { viewerCount } = useLiveViewers();
@@ -77,6 +77,9 @@ const Index = () => {
       </section>
 
       <main className="container mx-auto px-4 py-8 space-y-12">
+        {/* Tournament Champions Section */}
+        <WinnersShowcase />
+
         {isLoading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
