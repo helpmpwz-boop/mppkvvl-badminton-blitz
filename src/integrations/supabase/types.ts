@@ -209,6 +209,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tournament_winners: {
+        Row: {
+          awarded_at: string
+          awarded_by: string | null
+          category: string
+          created_at: string
+          id: string
+          partner_id: string | null
+          player_id: string
+          position: string
+          updated_at: string
+        }
+        Insert: {
+          awarded_at?: string
+          awarded_by?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          partner_id?: string | null
+          player_id: string
+          position?: string
+          updated_at?: string
+        }
+        Update: {
+          awarded_at?: string
+          awarded_by?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          partner_id?: string | null
+          player_id?: string
+          position?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_winners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_winners_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
